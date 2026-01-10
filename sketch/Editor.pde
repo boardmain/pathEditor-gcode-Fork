@@ -14,8 +14,11 @@ class Editor {
 			  minLengthControl,
        		  maxLengthControl,
 			  marginOfPathControl,
-			  numbersOfPathControl;
+			  numbersOfPathControl,
+			  speedControl,
+			  toolDownControl;
 			  
+	ScrollableList paperSizeControl;
 
 	Toggle twistControl,
 	       joinControl,
@@ -36,6 +39,17 @@ class Editor {
 		PFont font = createFont("DIN", 12 / pixelDensity);
 		cp5.setFont(font);
 		
+		paperSizeControl = cp5.addScrollableList("Paper Preset")
+			.setPosition(200, 60)
+			.setSize(100, 100)
+			.setBarHeight(20)
+			.setItemHeight(20)
+			.addItems(new String[] {"A0", "A1", "A2", "A3", "A4", "A5", "Custom"})
+			.setValue(4) // Default to A4, but will be updated in update()
+			.setOpen(false)
+			.setId(99)
+			;
+
 		widthControl = cp5.addNumberbox("Width (mm)")
 			.setPosition(100,100)
 			.setSize(100,20)
@@ -169,6 +183,28 @@ class Editor {
 			.setId(11)
 			;
 
+		speedControl = cp5.addNumberbox("Initial Speed")
+			.setPosition(100,775)
+			.setSize(100,20)
+			.setRange(500,5000)
+			.setMultiplier(100) // set the sensitifity of the numberbox
+			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+			.setValue(TOOL_SPEED_MM_PER_MIN)
+			.setDecimalPrecision(0)
+			.setId(12)
+			;
+
+		toolDownControl = cp5.addNumberbox("Tool Down (mm)")
+			.setPosition(100,825)
+			.setSize(100,20)
+			.setRange(2.0,10.0)
+			.setMultiplier(0.1) // set the sensitifity of the numberbox
+			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+			.setValue(TOOL_DOWN_MM)
+			.setDecimalPrecision(1)
+			.setId(13)
+			;
+
 		twistControl = cp5.addToggle("Use Twists")
 			.setPosition(250,100)
 			.setSize(20,20)
@@ -276,6 +312,8 @@ class Editor {
 		numbersOfPathControl.setValue(NUMBER_OF_PATHS);
 		marginOfPathControl.setValue(MARGIN_OF_PATH);
 		reduceCurveSpeedControl.setValue(reduceCurveSpeed);
+		speedControl.setValue(TOOL_SPEED_MM_PER_MIN);
+		toolDownControl.setValue(TOOL_DOWN_MM);
 	}
 	
 	
@@ -289,6 +327,8 @@ class Editor {
 		PRINT_H_MM = heightControl.getValue();
 		NUMBER_OF_PATHS = int(numbersOfPathControl.getValue());
 		MARGIN_OF_PATH = int(marginOfPathControl.getValue());
+		TOOL_SPEED_MM_PER_MIN = int(speedControl.getValue());
+		TOOL_DOWN_MM = toolDownControl.getValue();
 		GRID_W = int(colsControl.getValue());
 		GRID_H = int(rowsControl.getValue());
 		penSizeMM = penSizeControl.getValue();
@@ -328,6 +368,30 @@ class Editor {
 	}
 	
 	void controlEvent(ControlEvent e) {
+		if (e.getController().getName().equals("Paper Preset")) {
+			int idx = (int)e.getValue();
+			float w = -1, h = -1;
+			// A0: 1189 x 841
+			// A1: 841 x 594
+			// A2: 594 x 420
+			// A3: 420 x 297
+			// A4: 297 x 210
+			// A5: 210 x 148
+			switch(idx) {
+				case 0: w=1189; h=841; break; // A0
+				case 1: w=841; h=594; break; // A1
+				case 2: w=594; h=420; break; // A2
+				case 3: w=420; h=297; break; // A3
+				case 4: w=297; h=210; break; // A4
+				case 5: w=210; h=148; break; // A5
+				default: break; // Custom
+			}
+			if (w > 0 && h > 0) {
+				widthControl.setValue(w);
+				heightControl.setValue(h);
+			}
+		}
+
 		if(controlsVisible){
 			boolean updateSizes = printSizeDidChange();
 
@@ -342,6 +406,8 @@ class Editor {
 			minLength = int(minLengthControl.getValue());
 			maxLength = int(maxLengthControl.getValue());
 			NUMBER_OF_PATHS = int(numbersOfPathControl.getValue());
+			TOOL_SPEED_MM_PER_MIN = int(speedControl.getValue());
+			TOOL_DOWN_MM = toolDownControl.getValue();
 			useTwists = twistControl.getState();
 			useJoiners = joinControl.getState();
 			allowOverlap = overlapControl.getState();

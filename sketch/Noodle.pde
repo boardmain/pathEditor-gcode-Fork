@@ -149,13 +149,13 @@ class Noodle {
 	
 	void writeGcode(float startX, float startY, float ts_mm, float thick_mm) {
 		float marg_mm = (ts_mm - thick_mm) / 2.0;
-		// If thickness is ~0 (collapsed), we treat it as single line (marg = ts/2).
+		// If thickness is ~0 (collapsed)
 		boolean isCollapsed = (thick_mm < 0.1); 
 		
 		PMatrix2D m = new PMatrix2D();
 		
-		// PASS 1: LEFT WALL (Forward)
-		// Or Center Line if collapsed.
+		// --- PASS 1: LEFT WALL (Forward) ---
+		// Traverses Head -> Tail. Draws the "Left Wall" relative to forward motion.
 		for(int i = 0; i < path.length; i++) {
 			Point p = path[i];
 			m.reset();
@@ -163,69 +163,37 @@ class Noodle {
 			
 			Point prev = (i > 0) ? path[i-1] : null;
 			Point next = (i < path.length - 1) ? path[i+1] : null;
-			
-			boolean top = false, right = false, bottom = false, left = false;
-			float rotation = 0;
+
+			// Determine entering/exiting relative to P
+			// For Pass 1 (Forward): Enter from Prev, Exit to Next.
 			
 			if (i == 0) {
-				// HEAD
-				Point neighbor = path[i+1];
-				if(neighbor.x < p.x) { rotation = HALF_PI; }
-				else if(neighbor.x > p.x) { rotation = -HALF_PI; }
-				else if(neighbor.y < p.y) { rotation = PI; }
-				else { rotation = 0; }
-				
-				m.rotate(rotation);
-				if(!isCollapsed) {
-					drawHeadCapGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else {
-					// Collapsed Head: Single Line from Center to Bottom Edge.
-					// Center (t/2, t/2) -> Bottom (t/2, t)
-					addLine(m, ts_mm/2.0, ts_mm/2.0, ts_mm/2.0, ts_mm);
-				}
+				// HEAD (Start of Pass 1)
+				// Virtual entry from "Center of Head"? No, just handled as start.
+				// We draw the Left Rect side.
+				drawHeadBodyGcode(m, ts_mm, marg_mm, true, p, next);
 			} else if (i == path.length - 1) {
-				// TAIL
-				Point neighbor = path[i-1];
-				if(neighbor.x < p.x) { rotation = HALF_PI; }
-				else if(neighbor.x > p.x) { rotation = -HALF_PI; }
-				else if(neighbor.y < p.y) { rotation = PI; }
-				else { rotation = 0; } // neighbor is below
-				
-				m.rotate(rotation);
-				if(!isCollapsed){
-					drawTailCapGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else {
-					// Collapsed Tail: Single Line from Bottom Edge to Center.
-					// Bottom (t/2, t) -> Center (t/2, t/2)
-					addLine(m, ts_mm/2.0, ts_mm, ts_mm/2.0, ts_mm/2.0);
-				}
+				// TAIL (End of Pass 1)
+				// We draw Left Rect side.
+				drawTailBodyGcode(m, ts_mm, marg_mm, true, p, prev);
+				// Then Draw Cap Arc (Left -> Right)
+				if(!isCollapsed) drawTailCapArcGcode(m, ts_mm, marg_mm, p, prev);
 			} else {
 				// BODY
-				top = (prev.y < p.y || next.y < p.y);
-				bottom = (prev.y > p.y || next.y > p.y);
-				left = (prev.x < p.x || next.x < p.x);
-				right = (prev.x > p.x || next.x > p.x);
-				
-				if (top && bottom) {
-					drawVerticalGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else if (left && right) {
-					m.rotate(HALF_PI);
-					drawVerticalGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else if (bottom && right) {
-					drawCornerTLGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else if (bottom && left) {
-					drawCornerTRGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else if (top && left) {
-					drawCornerBRGcode(m, ts_mm, marg_mm, thick_mm, true);
-				} else if (top && right) {
-					drawCornerBLGcode(m, ts_mm, marg_mm, thick_mm, true);
-				}
+				// Draw Left Wall of motion Prev -> P -> Next
+				drawBodyGcode(m, ts_mm, marg_mm, true, p, prev, next);
 			}
 		}
 		
-		if(isCollapsed) return; // Stop here if single line mode.
+		if(isCollapsed) return; 
 		
-		// PASS 2: RIGHT WALL (Backward)
+		// --- PASS 2: RIGHT WALL (Backward) ---
+		// Traverses Tail -> Head. Draws the "Right Wall" relative to original Forward motion?
+		// NO. We traverse physical path backward.
+		// If we walk backwards, the "Original Right Wall" is on our LEFT.
+		// So we draw the Left Wall relative to our Backward motion.
+		// Motion is Next -> P -> Prev.
+		
 		for(int i = path.length - 1; i >= 0; i--){
 			Point p = path[i];
 			m.reset();
@@ -233,512 +201,374 @@ class Noodle {
 			
 			Point prev = (i > 0) ? path[i-1] : null;
 			Point next = (i < path.length - 1) ? path[i+1] : null;
-			
-			boolean top = false, right = false, bottom = false, left = false;
-			float rotation = 0;
-			
-			if (i == 0) {
-				// HEAD (Right side now)
-				Point neighbor = path[i+1];
-				if(neighbor.x < p.x) { rotation = HALF_PI; }
-				else if(neighbor.x > p.x) { rotation = -HALF_PI; }
-				else if(neighbor.y < p.y) { rotation = PI; }
-				else { rotation = 0; }
-				
-				m.rotate(rotation);
-				drawHeadCapGcode(m, ts_mm, marg_mm, thick_mm, false); // false = Right
-			} else if (i == path.length - 1) {
-				// TAIL (Right side now)
-				Point neighbor = path[i-1];
-				if(neighbor.x < p.x) { rotation = HALF_PI; }
-				else if(neighbor.x > p.x) { rotation = -HALF_PI; }
-				else if(neighbor.y < p.y) { rotation = PI; }
-				else { rotation = 0; }
-				
-				m.rotate(rotation);
-				drawTailCapGcode(m, ts_mm, marg_mm, thick_mm, false); // false = Right
+
+			if (i == path.length - 1) {
+				// TAIL (Start of Pass 2)
+				// Draw Right Side (which is Left of Backward motion)
+				drawTailBodyGcode(m, ts_mm, marg_mm, false, p, prev);
+			} else if (i == 0) {
+				// HEAD (End of Pass 2)
+				// Draw Right Side (Left of Backward motion)
+				drawHeadBodyGcode(m, ts_mm, marg_mm, false, p, next);
+				// Then Draw Head Cap Arc (Left of Bwd motion -> Right of Bwd motion aka Start of Fwd)
+				drawHeadCapArcGcode(m, ts_mm, marg_mm, p, next);
 			} else {
 				// BODY
-				top = (prev.y < p.y || next.y < p.y);
-				bottom = (prev.y > p.y || next.y > p.y);
-				left = (prev.x < p.x || next.x < p.x);
-				right = (prev.x > p.x || next.x > p.x);
-				
-				if (top && bottom) {
-					drawVerticalGcode(m, ts_mm, marg_mm, thick_mm, false);
-				} else if (left && right) {
-					m.rotate(HALF_PI);
-					drawVerticalGcode(m, ts_mm, marg_mm, thick_mm, false);
-				} else if (bottom && right) {
-					drawCornerTLGcode(m, ts_mm, marg_mm, thick_mm, false);
-				} else if (bottom && left) {
-					drawCornerTRGcode(m, ts_mm, marg_mm, thick_mm, false);
-				} else if (top && left) {
-					drawCornerBRGcode(m, ts_mm, marg_mm, thick_mm, false);
-				} else if (top && right) {
-					drawCornerBLGcode(m, ts_mm, marg_mm, thick_mm, false);
-				}
+				// Motion: Next -> P -> Prev.
+				// We pass 'next' as 'from', 'prev' as 'to'.
+				drawBodyGcode(m, ts_mm, marg_mm, false, p, next, prev);
 			}
 		}
 	}
 	
-	// --- GCode Geometry Helpers ---
+	// --- GCode Helpers ---
 	
-	void drawVerticalGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// Vertical: (0,0) is TL.
-		// "Left" Wall (relative to flow Down): x=marg. y goes 0->t.
-		// "Right" Wall (relative to flow Down): x=t-marg. y goes t->0 (reverse).
+	// Draw the Rect part of the Head (or Start cell).
+	// isPass1: true if Forward Pass (Left Wall), false if Backward Pass (Right Wall).
+	// Note: 'next' is the body neighbor.
+	void drawHeadBodyGcode(PMatrix2D m, float t, float marg, boolean isPass1, Point p, Point next) {
+		// Orientation: Head points AWAY from next.
+		// Calculate rotation so Head is "Up".
+		float rot = 0;
+		if(next.x < p.x) { rot = HALF_PI; }      // Next is Left. Head points Right. (Wait. neighbor < p -> neighbor Left. Head points away -> Right? No. drawNoodle rotates so neighbor is Down aka PI/2? No.)
+		// logic from drawNoodle:
+		// neighbor < p (Left): rotate(HALF_PI). (0,1)->(-1,0). Y(Down) becomes X(Left).
+		// So Body is Left. Head is Right?
+		// No. drawEnd draws rect relative to (0,0) (TopLeft).
+		// Wait. `drawEnd` logic:
+		// if neighbor Left: rotate(HALF_PI).
+		// rect(margin, t/2, ...).
+		// t/2 is Center Y.
+		// So it draws in Positive Y relative to rotation.
+		// Rotated Y+ is X-. (Down -> Left).
+		// So Rect is on Left. Body is Left.
+		// So Head is Right.
+		// Correct.
+		// So relative to rotated frame: Body is Down (+Y). Head is Up (-Y)?
+		// No, rect is (margin, t/2) to (w, t). Y goes t/2 -> t.
+		// That is POSITIVE Y.
+		// So Body is in Positive Y direction.
+		// Head Tip is at Center Y (t/2).
 		
-		if(leftSide) {
-			addLine(m, marg, 0, marg, t);
-		} else {
-			addLine(m, t - marg, t, t - marg, 0); 
-		}
-	}
-	
-	void drawCornerTLGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// Corner TL connects Bottom to Right.
-		// Center (t, t).
-		// Bottom Entrance: x=t-marg (Right wall), x=marg (Left wall).
-		// Right Exit: y=t-marg (Bottom wall?), y=marg (Top wall?).
+		// In `drawHeadBodyGcode`, we want to draw the wall segments.
+		// Frame: Body is DOWN (+Y). Head Tip is UP (Y < t/2? No, Y=t/2).
+		// Left Wall (Pass 1): x=marg. y creates line.
+		// Pass 1 (Head start): Start at Cap Interface (y=t/2)?
+		// Pass 1 is Left Wall of path.
+		// Path starts at Head.
+		// Left Wall goes along x=marg, from t/2 to t (Body Interface).
+		// Pass 2 (Head end): Arrive from Body.
+		// Right Wall (Left of Bwd): x=t-marg. from t to t/2.
 		
-		// If walking Left Wall (Inner logic):
-		// Radius = marg.
-		// Start Angle: Loop from PI (Left) to PI+HALF_PI (Top)?
-		// Geometry: Arc center (t, t).
-		// Inner Arc (Left Wall): radius marg. 
-		//    Starts at (t-marg, t)? No, `PI` is left -> (t-r, t) = (t-marg, t). Correct.
-		//    Ends at (t, t-marg)? `PI+HALF` is up -> (t, t-r).
-		//    Wait, Bottom Entrance means we come from y=t?
-		//    Corner TL connects Bottom (y=t) to Right (x=t).
-		//    So Inner Path: Starts (t-marg, t). Goes to (t, t-marg).
-		//    Angle: PI -> PI+HALF_PI.
+		if(next.x < p.x) { rot = HALF_PI; }
+		else if(next.x > p.x) { rot = -HALF_PI; }
+		else if(next.y < p.y) { rot = PI; }
+		else { rot = 0; }
+		m.rotate(rot); // Now Body is Down (+Y).
 		
-		// Outer Arc (Right Wall): radius thick+marg.
-		//    Starts at (t-(t+m), t) = (-m, t)? No, margin arithmetic.
-		//    Radius R = t - marg. (since width=t, gap=marg).
-		//    Wait, thickness + margin + margin = tile?
-		//    Actually `margin = (t - thick)/2`. So `thick + margin = t - margin`.
-		//    So Outer Radius = t - margin.
-		//    Starts at (t - R, t) = (marg, t).
-		//    Ends at (t, t - R) = (t, marg).
-		
-		// Left/Right Side Logic:
-		// "Left" wall depends on traversal direction.
-		// If flow is Bottom -> Right:
-		// Left Wall is Inner (radius marg).
-		// Right Wall is Outer (radius t-marg).
-		
-		// flow check: `bottom && right`.
-		// If prev is Bottom, we flow Bottom -> Right.
-		// If next is Bottom, we flow Right -> Bottom.
-		// We rely on standard drawing order?
-		// `drawNoodle` has NO direction info in `cornerTL`. It just draws arcs.
-		// BUT for 2-pass G-code, direction matters.
-		
-		// I must check direction relative to neighbors!
-		// But in body loop, I don't know flow easily without checking index.
-		// Actually I do: if(prev == bottom) -> Entering from bottom.
-		
-		// Wait, `cornerTL` assumes specific neighbor config (Bottom & Right).
-		// So it is ALWAYS either B->R or R->B.
-		// If Left Side Pass (Forward):
-		//   If entering from Bottom: draw Inner Arc (Forward).
-		//   If entering from Right: draw Outer Arc (Backward)? No.
-		//   If entering from Right: Left Wall is the Outer Arc!
-		
-		// This is tricky.
-		// Let's assume standard orientation based on `path[i-1]`.
-		// Need `enteringFrom` logic.
-		
-		// Let's implement `enteringFrom` in the main loop and pass it.
-		// But I cannot easily inject it now.
-		// I'll calculate it in the helper if needed, or pass `top/bottom/left/right` flags AND `prev` point?
-		
-		// Alternative: `cornerTL` is symmetric.
-		// Inner Arc ends: (t, t-m) and (t-m, t).
-		// Outer Arc ends: (t, m) and (m, t).
-		
-		// If Left Wall Pass:
-		//   We need to append a segment.
-		//   Last point was ...
-		//   If last point ~ (t-m, t), we are at Inner Start.
-		//   If last point ~ (m, t), we are at Outer Start.
-		//   We can detect proximity to deciding which way to draw!
-		
-		float cx = t, cy = t;
-		float rInner = marg;
-		float rOuter = t - marg; // (thick + marg)
-		
-		// Inner Arc endpoints: A(t-m, t), B(t, t-m).
-		// Outer Arc endpoints: C(m, t), D(t, m).
-		
-		// Transform one probe point to see where we are?
-		// `lastGcodeX/Y` is global.
-		// Transform candidate starts to global. Check dist.
-		
-		if(leftSide) {
-			// Try connecting to Inner A or Outer C?
-			// Just use `connectArc` helper that checks distance?
-			drawClosestArc(m, cx, cy, rInner, rOuter, PI, PI + HALF_PI); // PI to 1.5PI (270)
-		} else {
-			// Right Side Pass (Backward).
-			drawClosestArc(m, cx, cy, rInner, rOuter, PI, PI + HALF_PI); // The helper handles proximity
-		}
-		
-		
-	}
-	
-	// Similar for other corners...
-	void drawCornerTRGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// Corner TR: Bottom to Left.
-		// Center (0, t).
-		// Quadrant: -HALF_PI (Top/Up? No) -> 0 (Right).
-		// Processing 0 is Right (3 o'clock). -HALF_PI is Up (12 o'clock).
-		// TR connects Left (x=0) to Bottom (y=t).
-		// Arcs in Bottom-Right quadrant of the circle at (0,t)?
-		// No, `cornerTR` draws `arc(0, t, ..., -HALF_PI, 0)`.
-		// -90 to 0 degrees.
-		// Center (0, t). 
-		// Angle -90 (Up) -> (0, t-r). (x=0, y reduced). Connects to Left side? 
-		//    Wait, (0, t) is Bottom-Left of the tile physically?
-		//    Processing: (0,0) Top-Left. (0, t) Bottom-Left.
-		//    Arc at (0, t). -90 is Up. 0 is Right.
-		//    This matches "Bottom-Left" visually, but connects Left Wall to Bottom Wall?
-		//    Function name `cornerTR` (Top Right).
-		//    Logic: `bottom && left`. Connection Bottom <-> Left.
-		//    Wait `cornerTR` usually means the noodle TURNS towards TR?
-		//    Or is at TR?
-		//    If I am at TR, I connect Left and Bottom? No.
-		//    If I Connect Bottom and Left, I am likely a TR corner piece (visually lines are at TR).
-		
-		// Anyway, I stick to the ANGLES used in `Noodle.pde`.
-		// TR: -HALF_PI to 0. (270 to 360). Center (0,t).
-		drawClosestArc(m, 0, t, marg, t-marg, -HALF_PI, 0);
-	}
-	
-	void drawCornerBRGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// BR: Top <-> Left.
-		// Center (0,0).
-		// Angles: 0 to HALF_PI. (0 to 90).
-		drawClosestArc(m, 0, 0, marg, t-marg, 0, HALF_PI);
-	}
-	
-	void drawCornerBLGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// BL: Top <-> Right.
-		// Center (t, 0).
-		// Angles: HALF_PI to PI. (90 to 180).
-		drawClosestArc(m, t, 0, marg, t-marg, HALF_PI, PI);
-	}
-	
-	// --- CAPS ---
-	void drawHeadCapGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// Head Cap uses `drawEnd`.
-		// It just uses `arc` and `line`.
-		// Procedural drawEnd:
-		/*
-			fill(fillColor);
-			noStroke();
-			rect(margin, tileSize/2, tileSize-margin*2, tileSize/2);
-			arc(tileSize/2, tileSize/2, tileSize-margin*2, tileSize-margin*2, PI, TWO_PI);
-		*/
-		// That matches the visual.
-		// Rect from Center-Y to Bottom. Arc on Top.
-		// For Contour (Gcode):
-		// Left Side: Line Up -> Arc Left-to-Right -> Line Down?
-		// Actually Left implies "Left Wall".
-		// Since we rotate so neighbor is "Down" (or handled by rotate),
-		// The Cap is "Up".
-		// `drawEnd` draws arc at `tileSize/2, tileSize/2`. Radius `(t-2m)/2`?
-		// Diameter `t-2m`. So Radius `t/2 - m`.
-		// Start PI, End TWO_PI. (Top Semicircle).
-		
-		// If Left Side (Forward):
-		// We are ascending the Left Wall.
-		// We encounter the Cap.
-		// We trace the Arc.
-		// And descend the Right Wall?
-		// No, Left Side Pass handles Left Wall.
-		// Right Side Pass handles Right Wall.
-		// The CAP connects them.
-		
-		// If `leftSide` is true, we consider ourselves "Arriving" at the Cap.
-		// BUT `drawEnd` connects `path[i]` and `neighbor`.
-		// If i==0 (Head), neighbor is i+1.
-		// Body is "Down" (visually). Cap is "Up".
-		
-		// Left Wall comes up x=marg.
-		// Arc starts at x=marg?
-		// Center x=t/2. Radius = t/2 - m.
-		// x_start = t/2 - (t/2 - m) = m. CORRECT.
-		// x_end = t/2 + (t/2 - m) = t - m. CORRECT.
-		
-		// So the ARC connects Left Wall Top to Right Wall Top.
-		// In "Left Side Pass", do we draw the whole arc?
-		// Or half?
-		// Usually we draw the *entire* continuous loop.
-		// My logic is:
-		// Pass 1: Draw Left Wall (Segments).
-		// THEN Draw Tail Cap (Connecting Left to Right).
-		// Pass 2: Draw Right Wall (Segments).
-		// THEN Draw Head Cap (Connecting Right to Left).
-		
-		// So `drawHeadCapGcode` is ONLY called at the END of Pass 2?
-		// Function `writeGcode`:
-		//   Loop Pass 2...
-		//   drawHeadCapGcode(..., false).
-		// Wait, I call it inside the loop at `i==0`.
-		// But in Pass 2, `i` goes `len-1` down to `0`.
-		// So `i==0` is the LAST step of Pass 2.
-		// So yes, it connects the loop.
-		
-		// In Pass 1, `i==0` is the FIRST step.
-		// But we don't draw cap at start of Pass 1?
-		// Actually, we start at "Head Left Start".
-		// Which is `(marg, y_start_of_body)`.
-		// The Cap is "Before" this.
-		// So in Pass 1 (Head), we assume we start *after* the cap?
-		// Or does the Cap include the `rect` part?
-		// `drawEnd` has `rect(margin, tileSize/2, ..., tileSize/2)`.
-		// This rect extends from center to bottom.
-		// So Head cell is HALF body, HALF cap.
-		
-		// Complex.
-		// Let's rely on standard shapes.
-		// `drawVertical` covers `0 to t`.
-		// `drawEnd` covers `0 to t`?
-		// The rect goes `t/2` to `t`.
-		// The arc is at `t/2` (radius `r`). Top of arc is `t/2 - r`.
-		// If `r = t/2 - m`. Top is `t/2 - (t/2 - m) = m`.
-		// So Cap extends from `y=m` to `y=t`.
-		// And `y=0` to `y=m` is empty margin?
-		// Yes, `drawEnd` leaves space above?
-		
-		// If so, `drawVertical` which does `0 to t` would overlap?
-		// Neighboring cells match up.
-		
-		// Logic:
-		// Head:
-		// Pass 1 (i=0): We just draw the "Left body" part of the cap cell?
-		//   Rect Left: `(m, t/2)` to `(m, t)`.
-		// Pass 2 (i=0): We draw "Right body" part?
-		//   Rect Right: `(t-m, t)` to `(t-m, t/2)`.
-		//   AND we draw the Arc connecting them?
-		
-		// I will just use `drawClosestArc` or `gcodeCurveLine` to draw the Head Arc.
-		// If I call `drawHeadCapGcode` only at END of Pass 2, it draws the Arc.
-		// If I call it at START of Pass 1, it implies nothing (just move to start).
-		
-		// So:
-		// `drawHeadCapGcode`:
-		//   If `leftSide` (Start of Pass 1):
-		//     Move to (marg, t). (Bottom of cell, interface to body).
-		//     Or Move to (marg, t/2)?
-		//     If I want to trace the *whole* shape including the cap:
-		//     Start at (marg, t). Line to (marg, t/2). Arc to (t-marg, t/2). Line to (t-marg, t).
-		//     But this covers Left AND Right sides of the head cell.
-		//     This breaks the "Left Pass / Right Pass" structure.
-		//     Because Head is a turnaround.
-		
-		// Better:
-		// Head Cell logic:
-		//   Left Wall: Line (marg, t) -> (marg, t/2).
-		//   Cap: Arc (marg, t/2) -> (t-marg, t/2).
-		//   Right Wall: Line (t-marg, t/2) -> (t-marg, t).
-		
-		// My loops iterate ALL cells.
-		// i=0 is Head.
-		// Pass 1 (Left): Draw Left Wall of Head.
-		//   Line (marg, t) -> (marg, t/2).
-		//   End of Pass 1 (at tail): Draw Tail Arc.
-		// Pass 2 (Right): Draw Right Wall of Head.
-		//   Line (t-marg, t/2) -> (t-marg, t). (Reverse: t->t/2).
-		//   End of Pass 2 (at head): Draw Head Arc.
-		//   Arc (marg, t/2) -> (t-marg, t/2). (Reverse: t-marg -> marg).
-		
-		// This works perfectly!
-		
-		// Implementation:
-		// `drawHeadCapGcode`:
 		float cy = t/2.0;
-		float r = (t/2.0) - marg;
-		if(leftSide) {
-			// Left Wall Segment: Bottom (t) to Center (cy).
-			// Note: We are "Starting" at Head in Pass 1?
-			// i=0. Direction is Down (0->1).
-			// So "Start" of Noodle is Head.
-			// Pass 1 traces Left Wall.
-			// Start of Left Wall is at adhesion to Cap?
-			// NO. Start of Noodle is the TIP of the Cap.
-			// BUT we split loop into Left/Right.
-			// Start of "Left Path" -> where does it start?
-			// At the tip? Or at the tail?
-			// I decided:
-			// Pass 1: Head -> Body -> Tail. (Left Wall).
-			// Pass 2: Tail -> Body -> Head. (Right Wall).
-			// So Left Wall of Head Cell: (marg, cy) -> (marg, t)?
-			// Or (marg, t) -> (marg, cy)?
-			// If Body is "Down" (y increased).
-			// Flow is Down.
-			// So Left Wall goes (marg, cy) -> (marg, t).
-			// Right Wall goes (t-marg, t) -> (t-marg, cy).
-			// Head Arc connects Right Wall End (t-marg, cy) to Left Wall Start (marg, cy).
-			// YES.
-			
-			// So `drawHeadCapGcode` (Left Side - Pass 1 Start):
-			// Draw Line (marg, cy) -> (marg, t).
+		if(isPass1) {
+			// Forward Left: Start at Cap Line (cy), go to Body (t).
 			addLine(m, marg, cy, marg, t);
 		} else {
-			// Right Side - Pass 2 End.
-			// We are coming Up the Right Wall.
-			// Value passed `leftSide` is false.
-			// Draw Right Wall Segment: (t-marg, t) -> (t-marg, cy).
+			// Backward Right (Left of Bwd): Start at Body (t), go to Cap Line (cy).
 			addLine(m, t-marg, t, t-marg, cy);
-			
-			// AND Draw the Turnaround Arc!
-			// Arc from (t-marg, cy) to (marg, cy).
-			// Semicircle Top.
-			// Center (t/2, cy). Radius r.
-			// Start Angle 0 (Right). End Angle PI (Left).
-			// Clockwise? No, 0->PI is clockwise? No, 0->PI is CounterClockwise on screen (0=Right, PI=Left, via Bottom?)
-			// Processing Arc: 0 is Right. PI is Left. Positive angle = Clockwise? 
-			// Processing +Y is Down.
-			// 0=(1,0). PI/2=(0,1) (Down). PI=(-1,0).
-			// So 0 -> PI goes via Down (Bottom).
-			// We want Top Semicircle.
-			// So PI -> TWO_PI (Left -> Top -> Right).
-			// Or -PI -> 0.
-			// Start Point: (t-marg, cy) aka Right side (Angle 0).
-			// End Point: (marg, cy) aka Left side (Angle PI).
-			// We want UP path.
-			// 0 -> -PI (via Top).
-			drawClosestArc(m, t/2.0, cy, r, r, 0, -PI);
 		}
 	}
 	
-	void drawTailCapGcode(PMatrix2D m, float t, float marg, float thick, boolean leftSide) {
-		// Tail is inverted Head. Connects to `neighbor` (up).
-		// Body comes from Up. Tail is Down.
-		// Cap is at Bottom.
-		// Rect from 0 to t/2?
+	// Draw the Head Cap Arc (Connecting Right Wall End to Left Wall Start).
+	// Calls at end of Pass 2.
+	void drawHeadCapArcGcode(PMatrix2D m, float t, float marg, Point p, Point next) {
+		float rot = 0;
+		if(next.x < p.x) { rot = HALF_PI; }
+		else if(next.x > p.x) { rot = -HALF_PI; }
+		else if(next.y < p.y) { rot = PI; }
+		else { rot = 0; }
+		m.rotate(rot); 
+		
 		float cy = t/2.0;
 		float r = (t/2.0) - marg;
+		// Connect (t-marg, cy) to (marg, cy).
+		// Via Top (-Y).
+		// Start Angle: 0 (Right). Stop Angle: PI (Left).
+		// Direction: 0 -> -PI (CCW via top). 
+		// Or 0 -> PI? 0->PI is CW (via Bottom +Y). We want Top.
+		// So 0 -> -PI.
+		drawArcGcode(m, t/2.0, cy, r, 0, -PI);
+	}
+	
+	// Logic for Tail is inverted.
+	// Body is Up (-Y relative to tail? No).
+	// Tail neighbor is `prev`.
+	// Tail points AWAY from prev.
+	// Same rotation logic: Rotate so prev is Down (+Y).
+	// Tail Tip is Up (Y=t/2).
+	
+	void drawTailBodyGcode(PMatrix2D m, float t, float marg, boolean isPass1, Point p, Point prev) {
+		float rot = 0;
+		if(prev.x < p.x) { rot = HALF_PI; }
+		else if(prev.x > p.x) { rot = -HALF_PI; }
+		else if(prev.y < p.y) { rot = PI; }
+		else { rot = 0; }
+		m.rotate(rot);
 		
-		if(leftSide) {
-			// Pass 1 End.
-			// Coming down Left Wall.
-			// Segment: (marg, 0) -> (marg, cy).
-			addLine(m, marg, 0, marg, cy);
-			
-			// Turnaround Arc (Bottom).
-			// Connect Left (marg, cy) to Right (t-marg, cy).
-			// Angle PI (Left) -> 0 (Right) via Bottom.
-			// Bottom is +Y. Angle PI -> 2PI? No PI->0 via positive?
-			// PI (Left) -> 1.5PI (Top) -> 2PI (Right)? No that's Top.
-			// We want Bottom.
-			// PI (Left) -> HALF_PI (Down)? No HALF_PI is 90.
-			// PI -> HALF_PI is -90 deg.
-			// We want PI -> 0.
-			// Processing angles increase Clockwise.
-			// PI -> 1.5PI (Up) -> 2PI (Right).
-			// PI -> 0.5PI (Down)? No 180 -> 90.
-			// Let's visualize: 0=Right. 90=Down. 180=Left. 270=Up.
-			// We start Left (180). We want to go Right (0). Via Bottom (90? No, 90 is between 0 and 180).
-			// So 180 -> 90 -> 0.
-			// Just linear range PI -> 0?
-			// drawClosestArc checks distance, handles range.
-			drawClosestArc(m, t/2.0, cy, r, r, PI, 0); 
+		float cy = t/2.0;
+		if(isPass1) {
+			// Forward Left (Arriving at Tail): Body (t) -> Cap Line (cy).
+			addLine(m, marg, t, marg, cy);
 		} else {
-			// Pass 2 Start.
-			// Starting ascent of Right Wall.
-			// Segment: (t-marg, cy) -> (t-marg, 0).
-			addLine(m, t-marg, cy, t-marg, 0);
+			// Backward Right (Leaving Tail): Cap Line (cy) -> Body (t).
+			addLine(m, t-marg, cy, t-marg, t);
 		}
 	}
 	
-	// --- ARC HELPER ---
-	void drawClosestArc(PMatrix2D m, float cx, float cy, float r1, float r2, float startAng, float stopAng) {
-		// Identify which radius is closest to current pen position.
-		// Generate points for both starts.
+	void drawTailCapArcGcode(PMatrix2D m, float t, float marg, Point p, Point prev) {
+		float rot = 0;
+		if(prev.x < p.x) { rot = HALF_PI; }
+		else if(prev.x > p.x) { rot = -HALF_PI; }
+		else if(prev.y < p.y) { rot = PI; }
+		else { rot = 0; }
+		m.rotate(rot);
 		
-		// Candidate 1: Radius r1. Start Angle.
-		float sx1 = cx + cos(startAng) * r1;
-		float sy1 = cy + sin(startAng) * r1;
-		PVector ps1 = transform(m, sx1, sy1);
-		
-		// Candidate 2: Radius r2. Start Angle.
-		float sx2 = cx + cos(startAng) * r2;
-		float sy2 = cy + sin(startAng) * r2;
-		PVector ps2 = transform(m, sx2, sy2);
-		
-		// Also check Stop angles? Because we might be traversing Reverse.
-		float ex1 = cx + cos(stopAng) * r1;
-		float ey1 = cy + sin(stopAng) * r1;
-		PVector pe1 = transform(m, ex1, ey1);
-		
-		float ex2 = cx + cos(stopAng) * r2;
-		float ey2 = cy + sin(stopAng) * r2;
-		PVector pe2 = transform(m, ex2, ey2);
-		
-		// We have 4 endpoints. 2 arcs.
-		// Current pos: lastGcodeX, lastGcodeY.
-		
-		float dS1 = dist(lastGcodeX, lastGcodeY, ps1.x, ps1.y);
-		float dE1 = dist(lastGcodeX, lastGcodeY, pe1.x, pe1.y);
-		float dS2 = dist(lastGcodeX, lastGcodeY, ps2.x, ps2.y);
-		float dE2 = dist(lastGcodeX, lastGcodeY, pe2.x, pe2.y);
-		
-		float minD = min(dS1, min(dE1, min(dS2, dE2)));
-		
-		float curR = (minD == dS1 || minD == dE1) ? r1 : r2;
-		boolean forward = (minD == dS1 || minD == dS2);
-		
-		drawArc(m, cx, cy, curR, startAng, stopAng, forward);
+		float cy = t/2.0;
+		float r = (t/2.0) - marg;
+		// Connect Left (marg, cy) to Right (t-marg, cy).
+		// Via Top (-Y). (Tip of tail).
+		// Start Angle: PI (Left). Stop Angle: 0 (Right).
+		// Direction: PI -> 0?
+		// PI -> 0 is linear decrement? Or via Top?
+		// PI (180) -> 0. Via 90? No, 90 is Down.
+		// Via 270 (-90)? Yes.
+		// PI -> 0 (CCW). NO. CW is increasing.
+		// PI -> 2PI (via 3PI/2 270).
+		// Or PI -> -PI?
+		// Let's use negative check.
+		// PI -> 0 via negative logic? 
+		// Start PI. Stop 0. Delta -PI.
+		// PI -> 0. Midpoint PI/2 (90, Down).
+		// We want Top (-90).
+		// So we want PI -> 2PI.
+		// drawArcGcode handles simple lerp.
+		drawArcGcode(m, t/2.0, cy, r, PI, TWO_PI); 
 	}
 	
-	void drawArc(PMatrix2D m, float cx, float cy, float r, float start, float stop, boolean forward) {
-		float delta = (stop - start); // full span
+	// Universal Body Drawer: Draws the Wall on the LEFT of the motion from->to.
+	void drawBodyGcode(PMatrix2D m, float t, float marg, boolean isPass1, Point p, Point pFrom, Point pTo) {
+		// Determine visual case (Vertical, Corner, etc).
+		boolean top = (pFrom.y < p.y || pTo.y < p.y);
+		boolean bottom = (pFrom.y > p.y || pTo.y > p.y);
+		boolean left = (pFrom.x < p.x || pTo.x < p.x);
+		boolean right = (pFrom.x > p.x || pTo.x > p.x);
 		
-		// Dynamic resolution: Lower point count for smoother execution.
-		// Reference G-code suggests segments of ~5-10mm.
-		float arcLen = r * abs(delta);
-		// Resolution: ~0.2 segments per mm (1 segment every 5mm). min 6 steps.
-		int steps = max(6, int(arcLen * 0.2));
-
-		// If traversing reverse, we go stop -> start
-		// But loop calculates pos based on k.
-		// If forward: k=0 -> start. k=1 -> stop.
-		// If !forward: k=0 -> stop. k=1 -> start.
-		
-		for(int i=1; i<=steps; i++) {
-			float k = float(i) / float(steps);
-			float ang;
-			if (forward) {
-				ang = start + delta * k;
+		if (top && bottom) {
+			// VERTICAL
+			// Entering from?
+			if (pFrom.y < p.y) {
+				// From Top (Moving Down).
+				// Left Wall is x=marg.
+				addLine(m, marg, 0, marg, t);
 			} else {
-				ang = stop - delta * k;
+				// From Bottom (Moving Up).
+				// Left Wall is x=t-marg (Right side of tile).
+				addLine(m, t-marg, t, t-marg, 0);
 			}
-			
-			float px = cx + cos(ang) * r;
-			float py = cy + sin(ang) * r;
-			PVector ipv = transform(m, px, py);
-			
-			gcodeCurveLine(lastGcodeX, lastGcodeY, ipv.x, ipv.y); // using lastGcode as start implicitly
+		} else if (left && right) {
+			// HORIZONTAL
+			if (pFrom.x < p.x) {
+				// From Left (Moving Right).
+				// Left Wall is Top (y=marg).
+				addLine(m, 0, marg, t, marg);
+			} else {
+				// From Right (Moving Left).
+				// Left Wall is Bottom (y=t-marg).
+				addLine(m, t, t-marg, 0, t-marg);
+			}
+		} else if (bottom && right) {
+			// CORNER TL (Bottom <-> Right)
+			// Center (t, t). 
+			if (pFrom.y > p.y) {
+				// From Bottom (Moving Up/Right).
+				// Entrance: Bottom x=marg. (Left relative to Up).
+				// Exit: Right y=marg. (Left relative to Right).
+				// Turn is Right. Wall is Outer. Radius t-marg.
+				// Arc: Start (marg, t). End (t, marg).
+				// Center (t,t). 
+				// Start Angle: (marg, t) -> (t-R, t) -> PI.
+				// End Angle: (t, marg) -> (t, t-R) -> -HALF_PI (270).
+				// Dir: PI -> 270. CW. (Decreasing angle in Processing?) No, P5 +Angle is CW.
+				// 0=Right. 90=Down. 180=Left. 270=Up.
+				// 180 -> 270 is +90 deg. This is B -> L.
+				// We want B -> R?
+				// Wait. Bottom is 90? No, Bottom of tile is y=t.
+				// Relative to Center (t,t).
+				// (marg, t) is (-x, 0). Angle PI.
+				// (t, marg) is (0, -y). Angle 270.
+				// PI(180) -> 270. This describes Bottom-Left to Top-Right arc relative to center.
+				// Yes.
+				drawArcGcode(m, t, t, t-marg, PI, PI+HALF_PI);
+			} else {
+				// From Right (Moving Left/Down).
+				// Turn Left. Wall is Inner. Radius marg.
+				// Start (t, t-marg). Angle 270.
+				// End (t-marg, t). Angle PI.
+				// 270 -> 180.
+				drawArcGcode(m, t, t, marg, PI+HALF_PI, PI);
+			}
+		} else if (bottom && left) {
+			// CORNER TR (Bottom <-> Left)
+			// Center (0, t).
+			if (pFrom.y > p.y) {
+				// From Bottom.
+				// Moving Up/Left. Turn Left. Inner Wall. Radius marg.
+				// Entrance: Bottom x=t-marg (Right relative to tile, Left relative to Up-Left motion? No).
+				// Up motion vector (0,-1). Left is (-1,0) aka Left side.
+				// Entrance x=0+marg? No.
+				// Center (0,t). Inner R=marg.
+				// Arc is in TR quadrant of center?
+				// Relative to (0,t): x>0, y<0.
+				// Connects x=marg side?
+				// TR connects Bottom (y=t) and Left (x=0).
+				// Inner wall: Start (t-m, t)? No, dist to (0,t) is t-m? No.
+				// Inner R=marg.
+				// Points: (m, t) and (0, t-m).
+				// (m, t) relative to (0,t) is (m, 0). Angle 0.
+				// (0, t-m) relative to (0,t) is (0, -m). Angle 270 (-90).
+				// Motion B -> L.
+				// Start (m,t) -> End (0, t-m).
+				// Angle 0 -> 270. 
+				drawArcGcode(m, 0, t, marg, 0, -HALF_PI);
+			} else {
+				// From Left.
+				// Moving Right/Down. Turn Right. Outer Wall. Radius t-marg.
+				// Start (0, m). End (t-m, t).
+				// (0, m) relative to (0,t) is (0, m-t) = (0, -(t-m)). Angle 270 (-90).
+				// (t-m, t) relative is (t-m, 0). Angle 0.
+				// 270 -> 0.
+				drawArcGcode(m, 0, t, t-marg, -HALF_PI, 0); 
+			}
+		} else if (top && left) {
+			// CORNER BR (Top <-> Left)
+			// Center (0,0).
+			if (pFrom.y < p.y) {
+				// From Top.
+				// Moving Down/Left. Turn Right. Outer Wall. R=t-m.
+				// Entrance: Top (x=t-m, y=0)?
+				// Center (0,0). R=t-m.
+				// Start (t-m, 0). Angle 0.
+				// Exit Left (x=0, y=t-m). Angle 90 (HALF_PI).
+				// 0 -> 90.
+				drawArcGcode(m, 0, 0, t-marg, 0, HALF_PI);
+			} else {
+				// From Left.
+				// Moving Right/Up. Turn Left. Inner Wall. R=m.
+				// Start (0, m). Angle 90.
+				// End (m, 0). Angle 0.
+				// 90 -> 0.
+				drawArcGcode(m, 0, 0, marg, HALF_PI, 0);
+			}
+		} else if (top && right) {
+			// CORNER BL (Top <-> Right)
+			// Center (t, 0).
+			if (pFrom.y < p.y) {
+				// From Top.
+				// Moving Down/Right. Turn Left. Inner Wall. R=m.
+				// Start (t-m, 0). Relative (-m, 0). Angle PI.
+				// End (t, m). Relative (0, m). Angle HALF_PI.
+				// PI -> HALF_PI.
+				drawArcGcode(m, t, 0, marg, PI, HALF_PI);
+			} else {
+				// From Right.
+				// Moving Left/Up. Turn Right. Outer Wall. R=t-m.
+				// Start (t, t-m). Relative (0, t-m). Angle HALF_PI.
+				// End (m, 0). Relative (m-t, 0). Angle PI.
+				// HALF_PI -> PI.
+				drawArcGcode(m, t, 0, t-marg, HALF_PI, PI);
+			}
 		}
+	}
+	
+	// MODIFIED: Uses nearest-neighbor traversal to minimize G0 jumps.
+	void drawArcGcode(PMatrix2D m, float cx, float cy, float r, float start, float stop) {
+		float delta = (stop - start); 
+		float arcLen = r * abs(delta);
+		// Increase resolution: 5 steps minimum, or 1 step per 2mm.
+		int steps = max(6, int(arcLen * 0.5)); 
+        
+        // Transform Start Point
+        float px_start = cx + cos(start) * r;
+        float py_start = cy + sin(start) * r;
+        PVector pStart = transform(m, px_start, py_start);
+
+        // Transform End Point
+        float px_end = cx + cos(stop) * r;
+        float py_end = cy + sin(stop) * r;
+        PVector pEnd = transform(m, px_end, py_end);
+        
+        // Distances from current pen position
+        float dStart = dist(lastGcodeX, lastGcodeY, pStart.x, pStart.y);
+        float dEnd = dist(lastGcodeX, lastGcodeY, pEnd.x, pEnd.y);
+        
+        if (dStart <= dEnd) {
+             // Forward: Start -> Stop
+             float prevX = pStart.x;
+             float prevY = pStart.y;
+             
+             for(int i=1; i<=steps; i++) {
+                float k = float(i) / float(steps);
+                float ang = start + delta * k;
+			    float px = cx + cos(ang) * r;
+			    float py = cy + sin(ang) * r;
+			    PVector ipv = transform(m, px, py);
+			    
+                gcodeLine(prevX, prevY, ipv.x, ipv.y); 
+                prevX = ipv.x;
+                prevY = ipv.y;
+             }
+        } else {
+            // Backward: Stop -> Start
+            float prevX = pEnd.x;
+            float prevY = pEnd.y;
+             
+             for(int i=1; i<=steps; i++) {
+                float k = float(i) / float(steps);
+                // Inverse direction
+                float ang = stop - delta * k;
+			    float px = cx + cos(ang) * r;
+			    float py = cy + sin(ang) * r;
+			    PVector ipv = transform(m, px, py);
+			    
+                gcodeLine(prevX, prevY, ipv.x, ipv.y); 
+                prevX = ipv.x;
+                prevY = ipv.y;
+             }
+        }
 	}
 	
 	void addLine(PMatrix2D m, float x1, float y1, float x2, float y2) {
 		PVector p1 = transform(m, x1, y1);
 		PVector p2 = transform(m, x2, y2);
-		gcodeLine(p1.x, p1.y, p2.x, p2.y);
+		// Use nearest-neighbor logic
+		drawBestSegment(p1.x, p1.y, p2.x, p2.y);
 	}
 	
+	// NEW: Chooses direction A->B or B->A based on proximity to current pen pos
+	void drawBestSegment(float x1, float y1, float x2, float y2) {
+        float d1 = dist(lastGcodeX, lastGcodeY, x1, y1);
+        float d2 = dist(lastGcodeX, lastGcodeY, x2, y2);
+        
+        if (d1 <= d2) {
+            gcodeLine(x1, y1, x2, y2);
+        } else {
+            gcodeLine(x2, y2, x1, y1);
+        }
+    }
+
 	PVector transform(PMatrix2D m, float x, float y) {
 		float gx = m.m00*x + m.m01*y + m.m02;
 		float gy = m.m10*x + m.m11*y + m.m12;
 		return new PVector(gx, gy);
 	}
-	
+
 	void horizontalJoin(int type) {
 		horizontalShape(joiners[type-1]);
 	}

@@ -7,6 +7,10 @@ float lastGcodeX = -9999;
 float lastGcodeY = -9999;
 int currentGcodeSpeed = -1;
 
+String fmt(float val) {
+  return nf(val, 0, 3).replace(',', '.');
+}
+
 void resetGcode() {
   gcode = new StringBuilder();
   lastGcodeX = -9999;
@@ -20,7 +24,7 @@ void gcodeLine(float x1, float y1, float x2, float y2) {
   if (dist > 0.1) {
     // Jump
     gcode.append("G0 Z" + TOOL_UP_MM + "\n");
-    gcode.append("G0 X" + nf(x1, 0, 3) + " Y" + nf(y1, 0, 3) + "\n");
+    gcode.append("G0 X" + fmt(x1) + " Y" + fmt(y1) + "\n");
     gcode.append("G0 Z" + TOOL_DOWN_MM + "\n");
     // Force speed reset after jump just in case, or let the logic below handle it?
     // Usually G0 doesn't change F, but let's be safe relative to tracking.
@@ -33,7 +37,7 @@ void gcodeLine(float x1, float y1, float x2, float y2) {
     currentGcodeSpeed = targetSpeed;
   }
   
-  gcode.append("G1 X" + nf(x2, 0, 3) + " Y" + nf(y2, 0, 3) + "\n");
+  gcode.append("G1 X" + fmt(x2) + " Y" + fmt(y2) + "\n");
   lastGcodeX = x2;
   lastGcodeY = y2;
 }
@@ -49,7 +53,7 @@ void gcodeCurveLine(float x1, float y1, float x2, float y2) {
 
    if (dist > 0.1) {
     gcode.append("G0 Z" + TOOL_UP_MM + "\n");
-    gcode.append("G0 X" + nf(x1, 0, 3) + " Y" + nf(y1, 0, 3) + "\n");
+    gcode.append("G0 X" + fmt(x1) + " Y" + fmt(y1) + "\n");
     gcode.append("G0 Z" + TOOL_DOWN_MM + "\n");
   } 
   
@@ -58,7 +62,7 @@ void gcodeCurveLine(float x1, float y1, float x2, float y2) {
     currentGcodeSpeed = curveSpeed;
   }
   
-  gcode.append("G1 X" + nf(x2, 0, 3) + " Y" + nf(y2, 0, 3) + "\n");
+  gcode.append("G1 X" + fmt(x2) + " Y" + fmt(y2) + "\n");
   
   lastGcodeX = x2;
   lastGcodeY = y2;
@@ -98,24 +102,24 @@ void startPathGcode(int pathIndex, color c) {
 
 void initialMoveGcode(float x, float y) {
   gcode.append("G0 Z" + TOOL_UP_MM + " ;\n");
-  gcode.append("G0 X" + nf(x, 0, 3) + " Y" + nf(y, 0, 3) + " ; Initial position path\n");
+  gcode.append("G0 X" + fmt(x) + " Y" + fmt(y) + " ; Initial position path\n");
   gcode.append("G0 Z" + TOOL_DOWN_MM + " ;\n");
 }
 
 void linearMoveGcode(float x, float y) {
   gcode.append("F" + TOOL_SPEED_MM_PER_MIN + " ; Linear speed\n");
-  gcode.append("G1 X" + nf(x, 0, 3) + " Y" + nf(y, 0, 3) + "\n");
+  gcode.append("G1 X" + fmt(x) + " Y" + fmt(y) + "\n");
 }
 
 void curveMoveGcode(float x, float y) {
   int curveSpeed = int(TOOL_SPEED_MM_PER_MIN * 0.8);
   gcode.append("F" + curveSpeed + " ; Curve speed\n");
-  gcode.append("G1 X" + nf(x, 0, 3) + " Y" + nf(y, 0, 3) + "\n");
+  gcode.append("G1 X" + fmt(x) + " Y" + fmt(y) + "\n");
 }
 
 // Generic move that doesn't force speed (assumes current speed is fine)
 void moveGcode(float x, float y) {
-   gcode.append("G1 X" + nf(x, 0, 3) + " Y" + nf(y, 0, 3) + "\n");
+   gcode.append("G1 X" + fmt(x) + " Y" + fmt(y) + "\n");
 }
 
 

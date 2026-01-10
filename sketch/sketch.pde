@@ -22,7 +22,7 @@ int MARGIN_OF_PATH = 10;
 // float MAT_H_MM = 349; // Unused
 float TOOL_DOWN_MM = 5.2;
 float TOOL_UP_MM = 0.0;
-int TOOL_SPEED_MM_PER_MIN = 2500;
+int TOOL_SPEED_MM_PER_MIN = 2000;
 
 int TILE_SIZE = 50;
 int GRID_W = 11;
@@ -76,7 +76,7 @@ boolean useFills = true;
 boolean reduceCurveSpeed = false;
 
 int minLength = 200;
-int maxLength = 200;
+int maxLength = 1000;
 
 ImageSaver imgSaver = new ImageSaver();
 String fileNameToSave = "";
