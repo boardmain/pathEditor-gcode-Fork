@@ -44,6 +44,10 @@ These SVGs should be drawn vertically and sized so they will intercept noodle ed
 
 ![SVG Diagram](svgDiagram.png)
 
+# Requirement
+
+## vpype with vpype-gcode and occult must be installed
+
 ## Usage
 
 ### [Video Walkthrough](https://www.youtube.com/watch?v=1q7dORuGe6I)
@@ -67,6 +71,8 @@ These SVGs should be drawn vertically and sized so they will intercept noodle ed
 **`SHIFT + I`**: Reprocess a [Mask Image](#mask-images)
 
 **`L`**: Load a [Config File](#config)
+
+**`Q`**: to Generate GCODE
 
 **`S`**: Save a plot-ready SVG with associated data to the `output` folder.
 
