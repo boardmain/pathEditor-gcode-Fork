@@ -9,7 +9,11 @@
   "useCurves": false,
   "penSizeMM": 0.35,
   "noodleThicknessPct": 0.9,
+  "toolDownMM": 5.2,
+  "toolUpMM": 0.0,
+  "toolSpeedMmPerMin": 2500,
   "numNoodles": 90,
+  "reduceCurveSpeed": false,
   "graphics": [
     {
       "head": "graphics/roundEnd.svg"

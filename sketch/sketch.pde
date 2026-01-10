@@ -4,6 +4,7 @@ import controlP5.*;
 import processing.svg.*;
 
 Boolean USE_RETINA = true;
+
 String SETTINGS_PATH = "config/settings.json";
 String configPath = "config/config.json";
 String TWIST_PATH = "graphics/twist.svg";
@@ -19,6 +20,9 @@ int NUMBER_OF_PATHS = 1;
 int MARGIN_OF_PATH = 10;
 // float MAT_W_MM = 273; // Unused
 // float MAT_H_MM = 349; // Unused
+float TOOL_DOWN_MM = 5.2;
+float TOOL_UP_MM = 0.0;
+int TOOL_SPEED_MM_PER_MIN = 2500;
 
 int TILE_SIZE = 50;
 int GRID_W = 11;
@@ -37,6 +41,7 @@ boolean EDIT_MODE = false;
 boolean BLACKOUT_MODE = false;
 boolean CELLTYPE_MODE = false;
 boolean PATH_EDIT_MODE = false;
+
 int editingNoodle = 0;
 int[][] blackoutCells;
 
@@ -68,6 +73,7 @@ boolean allowOverlap = true;
 boolean showInfoPanel = false;
 boolean useRoughLines = false;
 boolean useFills = true;
+boolean reduceCurveSpeed = false;
 
 int minLength = 200;
 int maxLength = 200;

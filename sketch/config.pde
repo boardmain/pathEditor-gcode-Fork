@@ -79,6 +79,18 @@ void parseConfigObject(JSONObject obj) {
 	if(!obj.isNull("maxLength")){
 		maxLength = obj.getInt("maxLength");
 	}
+	if(!obj.isNull("toolDownMM")){
+		TOOL_DOWN_MM = obj.getFloat("toolDownMM");
+	}
+	if(!obj.isNull("toolUpMM")){
+		TOOL_UP_MM = obj.getFloat("toolUpMM");
+	}
+	if(!obj.isNull("toolSpeedMmPerMin")){
+		TOOL_SPEED_MM_PER_MIN = obj.getInt("toolSpeedMmPerMin");
+	}
+	if(!obj.isNull("reduceCurveSpeed")){
+		reduceCurveSpeed = obj.getBoolean("reduceCurveSpeed");
+	}
 	if(!obj.isNull("graphics")){
 		JSONArray gfx = obj.getJSONArray("graphics");
 		graphicSets = new GraphicSet[gfx.size()];

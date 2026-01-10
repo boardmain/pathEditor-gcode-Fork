@@ -22,6 +22,7 @@ class Editor {
 	       overlapControl,
 		   randomizeEndsControl,
 		   roughLinesControl,
+		   reduceCurveSpeedControl,
 		   useFillsControl;
 	
 	boolean controlsVisible = false;
@@ -240,7 +241,17 @@ class Editor {
 			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
 			.setPaddingX(10)
 			;
+		reduceCurveSpeedControl = cp5.addToggle("Reduce Curve Speed")
+			.setPosition(250,400)
+			.setSize(20,20)
+			.setValue(reduceCurveSpeed)
+			;
 		
+		reduceCurveSpeedControl
+			.getCaptionLabel()
+			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
+			.setPaddingX(10)
+			;
 		
 		hide();
 	}
@@ -264,6 +275,7 @@ class Editor {
 		useFillsControl.setValue(useFills);
 		numbersOfPathControl.setValue(NUMBER_OF_PATHS);
 		marginOfPathControl.setValue(MARGIN_OF_PATH);
+		reduceCurveSpeedControl.setValue(reduceCurveSpeed);
 	}
 	
 	
@@ -287,7 +299,7 @@ class Editor {
 		allowOverlap = overlapControl.getState();
 		useRoughLines = roughLinesControl.getState();
 		useFills = useFillsControl.getState();
-
+		reduceCurveSpeed = reduceCurveSpeedControl.getState();
 		controlsVisible = false;
 		cp5.hide();
 		
@@ -338,7 +350,7 @@ class Editor {
 			randomizeEnds = randomizeEndsControl.getState();
 			useRoughLines = roughLinesControl.getState();
 			useFills = useFillsControl.getState();
-
+			reduceCurveSpeed = reduceCurveSpeedControl.getState();
 			if(updateSizes){
 				updateKeyDimensions();
 			}
