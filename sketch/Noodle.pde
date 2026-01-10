@@ -38,25 +38,36 @@ class Noodle {
 	}
 
 	
-	void drawEnd(PShape shape, Point pos, Point neighbor, int flip) {
+	void drawEnd(boolean isFill, Point pos, Point neighbor) {
 		pushMatrix();
 		translate(tileSize / 2, tileSize/2);
 		
-		if(neighbor.x < pos.x){
-			rotate(HALF_PI);
-		} else if(neighbor.x > pos.x){
-			rotate(-HALF_PI);
-		} else if(neighbor.y < pos.y){
-			rotate(PI);
+		if(neighbor.x < pos.x){ // neighbor Left
+			rotate(HALF_PI); // +Y becomes -X (Left). Connect Down.
+		} else if(neighbor.x > pos.x){ // neighbor Right
+			rotate(-HALF_PI); // +Y becomes +X (Right). Connect Down.
+		} else if(neighbor.y < pos.y){ // neighbor Top
+			rotate(PI); // +Y becomes -Y (Top). Connect Down.
+		}
+		// else neighbor Bottom. Connect Down (+Y).
+		
+		if(isFill){
+			// Draw filled semi-circle cap + straight connection
+			noStroke();
+			// Straight part: from center (0,0) to edge (0, tileSize/2)
+			rect(-thickness/2, 0, thickness, tileSize/2);
+			// Cap part: semi-circle at top
+			arc(0, 0, thickness, thickness, PI, TWO_PI);
+		} else {
+			// Draw outline
+			noFill();
+			// Straight lines
+			line(-thickness/2, 0, -thickness/2, tileSize/2);
+			line(thickness/2, 0, thickness/2, tileSize/2);
+			// Cap arc
+			arc(0, 0, thickness, thickness, PI, TWO_PI);
 		}
 		
-		float scale = (float)thickness / (float)headWidth;
-		translate(0, (tileSize - headWidth * scale) / 2);
-		scale(flip, 1);
-		scale(scale);
-		strokeWeight(strokeSize / scale);
-		shape(shape, headWidth/-2 , headWidth/-2);
-		strokeWeight(strokeSize);
 		popMatrix();
 	}
 	
@@ -165,9 +176,9 @@ class Noodle {
 				pushMatrix();
 				translate(p.x * tileSize, p.y * tileSize);
 				if(i == 0){
-					drawEnd(head, path[i], path[i + 1], 1);
+					drawEnd(fills, path[i], path[i + 1]);
 				}else if( i == path.length -1){
-					drawEnd(tail, path[i], path[i - 1], -1);
+					drawEnd(fills, path[i], path[i - 1]);
 				} else {
 					
 					Point prev = path[i-1];
