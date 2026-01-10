@@ -46,6 +46,7 @@ int editingNoodle = 0;
 int[][] blackoutCells;
 
 boolean saveFile = false;
+boolean autoConvertGcode = false;
 
 Noodle noodle; 
 Noodle noodle2;
@@ -229,6 +230,31 @@ void draw() {
 		
 		if(imgSaver.state == SaveState.SAVING) { endRecord(); }
 		imgSaver.update();
+
+		if(autoConvertGcode && imgSaver.state == SaveState.COMPLETE) {
+			String svgPath = "output/" + fileNameToSave + ".svg";
+			String scriptPath = sketchPath("svg2gcode.sh");
+			String absSvgPath = sketchPath(svgPath);
+			
+			String[] cmd = {
+				scriptPath,
+				absSvgPath,
+				str(TOOL_UP_MM),
+				str(TOOL_DOWN_MM),
+				str(TOOL_SPEED_MM_PER_MIN),
+				str(PRINT_W_MM),
+				str(PRINT_H_MM)
+			};
+			
+			println("Executing conversion: " + join(cmd, " "));
+			try {
+				exec(cmd);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			autoConvertGcode = false;
+		}
 	popMatrix();
 	if(EDIT_MODE) {
 		editor.draw();
@@ -558,80 +584,16 @@ String getFileName() {
 }
 
 void generateAllGcodes() {
-	println("Generating G-code...");
+	println("Triggering " + getFileName() + " SVG Save & G-code Conversion...");
 	
-	float printAreaW_mm = PRINT_W_MM - (MARGIN_MM * 2);
-	float printAreaH_mm = PRINT_H_MM - (MARGIN_MM * 2);
-
-	float ts_mm = printAreaW_mm / float(GRID_W);
-	
-	if(GRID_H * ts_mm > printAreaH_mm){
-		ts_mm = printAreaH_mm / float(GRID_H);
+	fileNameToSave = getFileName();
+	int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+	int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+	if(USE_RETINA){
+		_plotW = _plotW * 2;
+		_plotH = _plotH * 2;
 	}
 
-	float startX_mm = (PRINT_W_MM - (ts_mm * GRID_W)) / 2.0;
-	float startY_mm = (PRINT_H_MM - (ts_mm * GRID_H)) / 2.0;
-	
-	String d  = str( day()    );
-	String mo = str( month()  );
-	String y  = str( year()   );
-	String s  = str( second() );
-	String min= str( minute() );
-	String h  = str( hour()   );
-	String timestamp = y + "-" + mo + "-" + d + " " + h + "-" + min + "-" + s;
-
-	int pathCount = 0;
-
-	// Structure: noodles array contains [Shape1_Out, Shape1_In, Shape2_Out, Shape2_In...]
-	// We want to process each Shape.
-	// And within each shape, process Inner (Index 1) THEN Outer (Index 0).
-	
-	// Assumption: noodles.length is always a multiple of NUMBER_OF_PATHS.
-	int totalShapes = noodles.length / NUMBER_OF_PATHS;
-	
-	float pxToMm = ts_mm / (float)TILE_SIZE; // Conversion factor
-
-	for(int sIdx = 0; sIdx < totalShapes; sIdx++) {
-		// Iterate paths in REVERSE order (Inner -> Outer)
-		// e.g. if num=3: 2 (Inner), 1 (Mid), 0 (Outer)
-		for(int pIdx = NUMBER_OF_PATHS - 1; pIdx >= 0; pIdx--) {
-			int i = sIdx * NUMBER_OF_PATHS + pIdx;
-			
-			if(noodles[i] != null){
-				
-				// Replicate thickness logic from draw() strictly in Pixels first
-				int pathIndex = i % NUMBER_OF_PATHS;
-				float baseThicknessPx = TILE_SIZE * noodleThicknessPct;
-				float reductionPx = pathIndex * 2 * MARGIN_OF_PATH; // MARGIN_OF_PATH is pixels
-				float currentThicknessPx = baseThicknessPx - reductionPx;
-				
-				// Collapse logic (in pixels)
-				if(currentThicknessPx < MARGIN_OF_PATH && currentThicknessPx > -MARGIN_OF_PATH){
-					currentThicknessPx = 0;
-				}
-				
-				// Only proceed if valid
-				if(currentThicknessPx >= 0) {
-					pathCount++;
-					// Convert to MM for Gcode generation
-					float currentThicknessMM = currentThicknessPx * pxToMm;
-				
-					resetGcode();
-					headGcode();
-					startPathGcode(i, noodles[i].fillColor);
-					
-					noodles[i].writeGcode(startX_mm, startY_mm, ts_mm, currentThicknessMM);
-					
-					footGcode();
-					
-					String filename = timestamp + "_" + pathCount;
-					saveGcode(filename);
-					println("Saved: " + filename + ".gcode");
-				} else {
-					println("Skipping path " + i + " (Too thin: " + currentThicknessPx + "px)");
-				}
-			}
-		}
-	}
-	println("Done generating " + pathCount + " files.");
+	imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
+	autoConvertGcode = true;
 }
