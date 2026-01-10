@@ -116,7 +116,7 @@ class Editor {
 		minLengthControl = cp5.addNumberbox("Min Length")
 			.setPosition(100,500)
 			.setSize(100,20)
-			.setRange(2,1000)
+			.setRange(10,2000)
 			.setMultiplier(1) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
 			.setValue(penSizeMM)
@@ -127,7 +127,7 @@ class Editor {
 		maxLengthControl = cp5.addNumberbox("Max Length")
 			.setPosition(100,550)
 			.setSize(100,20)
-			.setRange(2,1000)
+			.setRange(10,2000)
 			.setMultiplier(1) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
 			.setValue(penSizeMM)

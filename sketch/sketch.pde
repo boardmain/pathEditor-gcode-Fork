@@ -359,6 +359,9 @@ void keyPressed() {
 		break;
 	}
 	switch(key) {
+		case 'q':
+			generateAllGcodes();
+		break;
 		case 's' :
 			fileNameToSave = getFileName();
 			int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
@@ -552,4 +555,83 @@ String getFileName() {
  	String date = y + "-" + mo + "-" + d + " " + h + "-" + min + "-" + s;
  	String n = date;
  	return n;
+}
+
+void generateAllGcodes() {
+	println("Generating G-code...");
+	
+	float printAreaW_mm = PRINT_W_MM - (MARGIN_MM * 2);
+	float printAreaH_mm = PRINT_H_MM - (MARGIN_MM * 2);
+
+	float ts_mm = printAreaW_mm / float(GRID_W);
+	
+	if(GRID_H * ts_mm > printAreaH_mm){
+		ts_mm = printAreaH_mm / float(GRID_H);
+	}
+
+	float startX_mm = (PRINT_W_MM - (ts_mm * GRID_W)) / 2.0;
+	float startY_mm = (PRINT_H_MM - (ts_mm * GRID_H)) / 2.0;
+	
+	String d  = str( day()    );
+	String mo = str( month()  );
+	String y  = str( year()   );
+	String s  = str( second() );
+	String min= str( minute() );
+	String h  = str( hour()   );
+	String timestamp = y + "-" + mo + "-" + d + " " + h + "-" + min + "-" + s;
+
+	int pathCount = 0;
+
+	// Structure: noodles array contains [Shape1_Out, Shape1_In, Shape2_Out, Shape2_In...]
+	// We want to process each Shape.
+	// And within each shape, process Inner (Index 1) THEN Outer (Index 0).
+	
+	// Assumption: noodles.length is always a multiple of NUMBER_OF_PATHS.
+	int totalShapes = noodles.length / NUMBER_OF_PATHS;
+	
+	float pxToMm = ts_mm / (float)TILE_SIZE; // Conversion factor
+
+	for(int sIdx = 0; sIdx < totalShapes; sIdx++) {
+		// Iterate paths in REVERSE order (Inner -> Outer)
+		// e.g. if num=3: 2 (Inner), 1 (Mid), 0 (Outer)
+		for(int pIdx = NUMBER_OF_PATHS - 1; pIdx >= 0; pIdx--) {
+			int i = sIdx * NUMBER_OF_PATHS + pIdx;
+			
+			if(noodles[i] != null){
+				
+				// Replicate thickness logic from draw() strictly in Pixels first
+				int pathIndex = i % NUMBER_OF_PATHS;
+				float baseThicknessPx = TILE_SIZE * noodleThicknessPct;
+				float reductionPx = pathIndex * 2 * MARGIN_OF_PATH; // MARGIN_OF_PATH is pixels
+				float currentThicknessPx = baseThicknessPx - reductionPx;
+				
+				// Collapse logic (in pixels)
+				if(currentThicknessPx < MARGIN_OF_PATH && currentThicknessPx > -MARGIN_OF_PATH){
+					currentThicknessPx = 0;
+				}
+				
+				// Only proceed if valid
+				if(currentThicknessPx >= 0) {
+					pathCount++;
+					// Convert to MM for Gcode generation
+					float currentThicknessMM = currentThicknessPx * pxToMm;
+				
+					resetGcode();
+					headGcode();
+					startPathGcode(i, noodles[i].fillColor);
+					
+					noodles[i].writeGcode(startX_mm, startY_mm, ts_mm, currentThicknessMM);
+					
+					footGcode();
+					
+					String filename = timestamp + "_" + pathCount;
+					saveGcode(filename);
+					println("Saved: " + filename + ".gcode");
+				} else {
+					println("Skipping path " + i + " (Too thin: " + currentThicknessPx + "px)");
+				}
+			}
+		}
+	}
+	println("Done generating " + pathCount + " files.");
 }
