@@ -33,11 +33,11 @@ void parseConfigObject(JSONObject obj) {
 	if(!obj.isNull("marginOfPath")){
 		MARGIN_OF_PATH = obj.getInt("marginOfPath");
 	}
-	if(!obj.isNull("printWidthInches")){
-		PRINT_W_INCHES = obj.getFloat("printWidthInches");
+	if(!obj.isNull("printWidthMm")){
+		PRINT_W_MM = obj.getFloat("printWidthMm");
 	}
-	if(!obj.isNull("printHeightInches")) {
-		PRINT_H_INCHES = obj.getFloat("printHeightInches");
+	if(!obj.isNull("printHeightMm")) {
+		PRINT_H_MM = obj.getFloat("printHeightMm");
 	}
 	if(!obj.isNull("printResolution")) {
 		PRINT_RESOLUTION = obj.getInt("printResolution");
@@ -48,8 +48,8 @@ void parseConfigObject(JSONObject obj) {
 	if(!obj.isNull("gridHeight")){
 		GRID_H = obj.getInt("gridHeight");
 	}
-	if(!obj.isNull("marginInches")){
-		MARGIN_INCHES = obj.getFloat("marginInches");
+	if(!obj.isNull("marginMm")){
+		MARGIN_MM = obj.getFloat("marginMm");
 	}
 	if(!obj.isNull("useTwists")){
 		useTwists = obj.getBoolean("useTwists");

@@ -112,11 +112,11 @@ A json data file will be saved alongside your SVG. This contains the config used
 
 ## Config Options
 
-**`printHeightInches`** (float)  
-The height of your output image in inches.
+**`printHeightMm`** (float)  
+The height of your output image in millimeters.
 
-**`printWidthInches`** (float)  
-The width of your output image in inches.
+**`printWidthMm`** (float)  
+The width of your output image in millimeters.
 
 **`gridWidth`** (integer)  
 The number of horizontal cells in the grid.
@@ -124,7 +124,7 @@ The number of horizontal cells in the grid.
 **`gridHeight`** (integer)  
 The number of vertical cells in the grid.
 
-**`marginInches`** (float)  
+**`marginMm`** (float)  
 The minimum width of the margin between the grid and the edge of your paper. In configurations with a large number of grid cells, this won't apply.
 
 **`useTwists`** (boolean)  

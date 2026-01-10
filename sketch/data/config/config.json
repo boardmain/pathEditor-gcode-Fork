@@ -1,9 +1,9 @@
 {
-  "printWidthInches": 16,
-  "printHeightInches": 11,
+  "printWidthMm": 210,
+  "printHeightMm": 297,
   "gridWidth": 8,
   "gridHeight": 5,
-  "marginInches": 0.5,
+  "marginMm": 15,
   "useTwists": true,
   "useJoiners": true,
   "useCurves": false,

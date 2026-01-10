@@ -95,13 +95,13 @@ class ImageSaver {
 		
 		JSONObject obj = new JSONObject();
 		obj.setJSONArray("blackoutCells", cellArray);
-		obj.setFloat("printWidthInches", PRINT_W_INCHES);
-		obj.setFloat("printHeightInches", PRINT_H_INCHES);
+		obj.setFloat("printWidthMm", PRINT_W_MM);
+		obj.setFloat("printHeightMm", PRINT_H_MM);
 		obj.setInt("numberOfPaths", NUMBER_OF_PATHS);
 		obj.setInt("marginOfPath", MARGIN_OF_PATH);
 		obj.setInt("gridWidth", GRID_W);
 		obj.setInt("gridHeight", GRID_H);
-		obj.setFloat("marginInches", MARGIN_INCHES);
+		obj.setFloat("marginMm", MARGIN_MM);
 		obj.setBoolean("useTwists", useTwists);
 		obj.setBoolean("useJoiners", useJoiners);
 		obj.setBoolean("allowOverlap", allowOverlap);
@@ -116,7 +116,7 @@ class ImageSaver {
 		println("done.");
 	}
 	
-	void resizeSVG(String filename, float wInches, float hInches, int wPx, int hPx){
+	void resizeSVG(String filename, float wMm, float hMm, int wPx, int hPx){
 		print("- resizing SVG... ");
 		String[] lines = loadStrings("output/" + filename + ".svg");
 		
@@ -126,11 +126,11 @@ class ImageSaver {
 				print(" found SVG tag... ");
 				Pattern p = Pattern.compile("width=\"([0-9]+)\"");
 		        Matcher m = p.matcher(l);
-		        l = m.replaceAll("width=\"" + wInches + "in\"");
+		        l = m.replaceAll("width=\"" + wMm + "mm\"");
 		        
 		        Pattern p2 = Pattern.compile("height=\"([0-9]+)\"");
 		        Matcher m2 = p2.matcher(l);
-		        lines[i] = m2.replaceAll("height=\"" + hInches + "in\" viewBox=\"0 0 " + wPx + " " + hPx + "\"");
+		        lines[i] = m2.replaceAll("height=\"" + hMm + "mm\" viewBox=\"0 0 " + wPx + " " + hPx + "\"");
 			}
 		}
 		saveStrings("output/" + filename + ".svg", lines);

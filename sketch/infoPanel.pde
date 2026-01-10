@@ -8,8 +8,8 @@ void drawInfoPanel() {
     
     textFont(menloFont);
     textAlign(LEFT, TOP);
-    text("       SIZE: " + PRINT_W_INCHES + " × " + PRINT_H_INCHES, 32, 24);
-    text("     MARGIN: " + MARGIN_INCHES+"\"", 32, 40);
+    text("       SIZE: " + PRINT_W_MM + " × " + PRINT_H_MM + " mm", 32, 24);
+    text("     MARGIN: " + MARGIN_MM + " mm", 32, 40);
     text("       GRID: " + GRID_W + " × " + GRID_H, 32, 64);
     text("    NOODLES: " + numNoodles, 32, 88);
     text("  THICKNESS: " + round(noodleThicknessPct * 100) + "%", 32, 104);

@@ -35,36 +35,36 @@ class Editor {
 		PFont font = createFont("DIN", 12 / pixelDensity);
 		cp5.setFont(font);
 		
-		widthControl = cp5.addNumberbox("Width")
+		widthControl = cp5.addNumberbox("Width (mm)")
 			.setPosition(100,100)
 			.setSize(100,20)
-			.setRange(5.0,35.0)
-			.setMultiplier(0.25) // set the sensitifity of the numberbox
+			.setRange(100.0,1000.0)
+			.setMultiplier(1.0) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-			.setValue(PRINT_W_INCHES)
-			.setDecimalPrecision(2)
+			.setValue(PRINT_W_MM)
+			.setDecimalPrecision(0)
 			.setId(1)
 			;
 			
-		heightControl = cp5.addNumberbox("Height")
+		heightControl = cp5.addNumberbox("Height (mm)")
 			.setPosition(100,150)
 			.setSize(100,20)
-			.setRange(5.0, 35.0)
-			.setMultiplier(0.25) // set the sensitifity of the numberbox
+			.setRange(100.0, 1000.0)
+			.setMultiplier(1.0) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-			.setValue(MARGIN_INCHES)
-			.setDecimalPrecision(2)
+			.setValue(PRINT_H_MM)
+			.setDecimalPrecision(0)
 			.setId(2)
 			;
 		
-		marginControl = cp5.addNumberbox("Margin")
+		marginControl = cp5.addNumberbox("Margin (mm)")
 			.setPosition(100,200)
 			.setSize(100,20)
-			.setRange(0.0,5.0)
-			.setMultiplier(0.25) // set the sensitifity of the numberbox
+			.setRange(0.0,120.0)
+			.setMultiplier(1.0) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-			.setValue(PRINT_H_INCHES)
-			.setDecimalPrecision(2)
+			.setValue(MARGIN_MM)
+			.setDecimalPrecision(0)
 			.setId(2)
 			;
 
@@ -246,9 +246,9 @@ class Editor {
 	}
 
 	void update() {
-		widthControl.setValue(PRINT_W_INCHES);
-		heightControl.setValue(PRINT_H_INCHES);
-		marginControl.setValue(MARGIN_INCHES);
+		widthControl.setValue(PRINT_W_MM);
+		heightControl.setValue(PRINT_H_MM);
+		marginControl.setValue(MARGIN_MM);
 		colsControl.setValue(GRID_W);
 		rowsControl.setValue(GRID_H);
 		minLengthControl.setValue(minLength);
@@ -273,8 +273,8 @@ class Editor {
 	}
 	
 	void hide() {
-		PRINT_W_INCHES = widthControl.getValue();
-		PRINT_H_INCHES = heightControl.getValue();
+		PRINT_W_MM = widthControl.getValue();
+		PRINT_H_MM = heightControl.getValue();
 		NUMBER_OF_PATHS = int(numbersOfPathControl.getValue());
 		MARGIN_OF_PATH = int(marginOfPathControl.getValue());
 		GRID_W = int(colsControl.getValue());
@@ -305,13 +305,13 @@ class Editor {
 
 	boolean printSizeDidChange() {
 		return (
-			PRINT_W_INCHES != widthControl.getValue() || 
-			PRINT_H_INCHES != heightControl.getValue() ||
+			PRINT_W_MM != widthControl.getValue() || 
+			PRINT_H_MM != heightControl.getValue() ||
 			GRID_W != int(colsControl.getValue())||
 			GRID_H != int(rowsControl.getValue()) ||
 			NUMBER_OF_PATHS != int(numbersOfPathControl.getValue()) ||
 			MARGIN_OF_PATH != int(marginOfPathControl.getValue()) ||
-			MARGIN_INCHES != marginControl.getValue()
+			MARGIN_MM != marginControl.getValue()
 		);
 	}
 	
@@ -319,9 +319,9 @@ class Editor {
 		if(controlsVisible){
 			boolean updateSizes = printSizeDidChange();
 
-			PRINT_W_INCHES = widthControl.getValue();
-			PRINT_H_INCHES = heightControl.getValue();
-			MARGIN_INCHES = marginControl.getValue();
+			PRINT_W_MM = widthControl.getValue();
+			PRINT_H_MM = heightControl.getValue();
+			MARGIN_MM = marginControl.getValue();
 			MARGIN_OF_PATH = int(marginOfPathControl.getValue());
 			GRID_W = int(colsControl.getValue());
 			GRID_H = int(rowsControl.getValue());

@@ -1,0 +1,20 @@
+{
+  "gridHeight": 11,
+  "useJoiners": true,
+  "minLength": 200,
+  "useTwists": true,
+  "penSizeMM": 0.3499999940395355,
+  "numNoodles": 3,
+  "marginOfPathMM": 1,
+  "marginMM": 12.699999809265137,
+  "useRoughLines": false,
+  "useFills": false,
+  "printHeightMM": 355.6000061035156,
+  "allowOverlap": true,
+  "printWidthMM": 279.3999938964844,
+  "noodleThicknessPct": 0.5,
+  "gridWidth": 11,
+  "randomizeEnds": false,
+  "maxLength": 200,
+  "numberOfPaths": 1
+}

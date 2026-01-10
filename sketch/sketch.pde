@@ -11,14 +11,14 @@ String TWIST_FILL_PATH = "graphics/twistFill.svg";
 
 float MAX_SCREEN_SCALE = 0.182 * 2; // % - (0.2456 == macbook 1:1) (0.182 == LG Screen)
 float SCREEN_SCALE = 0.182 * 2; 
-float PRINT_W_INCHES = 11;
-float PRINT_H_INCHES = 14;
+float PRINT_W_MM = 210;
+float PRINT_H_MM = 297;
 int PRINT_RESOLUTION = 300;
-float MARGIN_INCHES = 0.5;
+float MARGIN_MM = 15;
 int NUMBER_OF_PATHS = 1;
 int MARGIN_OF_PATH = 10;
-float MAT_W_INCHES = 10.75;
-float MAT_H_INCHES = 13.75;
+// float MAT_W_MM = 273; // Unused
+// float MAT_H_MM = 349; // Unused
 
 int TILE_SIZE = 50;
 int GRID_W = 11;
@@ -27,8 +27,8 @@ int GRID_H = 11;
 int PRINT_X = 0;
 int PRINT_Y = 0;
 
-int canvasW = int(PRINT_W_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
-int canvasH = int(PRINT_H_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
+int canvasW = int(PRINT_W_MM / 25.4 * PRINT_RESOLUTION * SCREEN_SCALE);
+int canvasH = int(PRINT_H_MM / 25.4 * PRINT_RESOLUTION * SCREEN_SCALE);
 
 int canvasX = 0;
 int canvasY = 0;
@@ -120,8 +120,8 @@ void calculateScreenScale() {
 	float maxW = width - 100;
 	float maxH = height - 100;
 	
-	float printW = PRINT_W_INCHES * PRINT_RESOLUTION;
-	float printH = PRINT_H_INCHES * PRINT_RESOLUTION;
+	float printW = (PRINT_W_MM / 25.4) * PRINT_RESOLUTION;
+	float printH = (PRINT_H_MM / 25.4) * PRINT_RESOLUTION;
 	SCREEN_SCALE = maxW / printW;
 	
 	if(printH * SCREEN_SCALE > maxH){
@@ -132,15 +132,15 @@ void calculateScreenScale() {
 		SCREEN_SCALE = MAX_SCREEN_SCALE;
 	}
 	
-	canvasW = int(PRINT_W_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
-	canvasH = int(PRINT_H_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
+	canvasW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+	canvasH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
 	
 	canvasX = (width - canvasW) /2;
 	canvasY = (height - canvasH) /2;
 }
 
 void calculateTileSize() {
-	int marginPx = int(MARGIN_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
+	int marginPx = int((MARGIN_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
 	int printAreaW = canvasW - marginPx * 2;
 	int printAreaH = canvasH - marginPx * 2;
 	TILE_SIZE = printAreaW / GRID_W;
@@ -344,14 +344,14 @@ void keyPressed() {
 	switch(key) {
 		case 's' :
 			fileNameToSave = getFileName();
-			int _plotW = int(PRINT_W_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
-			int _plotH = int(PRINT_H_INCHES * PRINT_RESOLUTION * SCREEN_SCALE);
+			int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+			int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
 			if(USE_RETINA){
 				_plotW = _plotW * 2;
 				_plotH = _plotH * 2;
 			}
 
-			imgSaver.begin(PRINT_W_INCHES, PRINT_H_INCHES, _plotW, _plotH, fileNameToSave);
+			imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
 		break;
 		case 'g':
 			showGrid = !showGrid;
