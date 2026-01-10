@@ -1,6 +1,6 @@
 {
-  "printWidthMm": 210,
-  "printHeightMm": 297,
+  "printWidthMm": 297,
+  "printHeightMm": 210,
   "gridWidth": 8,
   "gridHeight": 5,
   "marginMm": 15,

@@ -201,8 +201,19 @@ void draw() {
 				float reduction = pathIndex * 2 * MARGIN_OF_PATH;
 				float currentThickness = baseThickness - reduction;
 				
-				// Se lo spessore è valido (> 0), disegniamo
-				if(currentThickness > 0){
+				// Se lo spessore diventa troppo sottile (inferiore al margine), 
+				// lo collassiamo a una singola linea centrale (spessore 0)
+				if(currentThickness < MARGIN_OF_PATH && currentThickness > -MARGIN_OF_PATH){ 
+					// Usiamo un range negativo piccolo per catturare il caso in cui 
+					// la riduzione supera di poco lo spessore, se vogliamo un comportamento "graceful",
+					// ma la richiesta specifica "più vicine del valore MARGIN_OF_PATH".
+					// Se le linee sono distanti meno di MARGIN_OF_PATH, collassa.
+					currentThickness = 0;
+				}
+
+				// Se lo spessore è valido (>= 0), disegniamo
+				// Nota: >= 0 permette di disegnare la linea singola (thickness 0)
+				if(currentThickness >= 0){
 					float currentPct = currentThickness / (float)TILE_SIZE;
 					noodles[i].draw(TILE_SIZE, currentPct, useTwists);
 				}
