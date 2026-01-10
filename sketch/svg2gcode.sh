@@ -74,7 +74,7 @@ vpype -c "$TMP_CFG" \
   linesimplify --tolerance 0.05mm \
   linesort \
   rotate 90 \
-  layout --fit-to-margins ${MARGIN}mm --align left --valign bottom ${WIDTH}mmx${HEIGHT}mm \
+  layout --fit-to-margins ${MARGIN}mm --align center --valign center ${WIDTH}mmx${HEIGHT}mm \
   gwrite -p default \
   "$OUTPUT"
 
