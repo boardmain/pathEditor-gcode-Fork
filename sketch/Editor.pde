@@ -12,7 +12,10 @@ class Editor {
 	          numNoodlesControl,
 	          thicknessControl,
 			  minLengthControl,
-			  maxLengthControl;
+       		  maxLengthControl,
+			  marginOfPathControl,
+			  numbersOfPathControl;
+			  
 
 	Toggle twistControl,
 	       joinControl,
@@ -142,12 +145,35 @@ class Editor {
 			.setDecimalPrecision(2)
 			.setId(5)
 			;
-		
+
+		numbersOfPathControl = cp5.addNumberbox("Numero Path")
+			.setPosition(100,675)
+			.setSize(100,20)
+			.setRange(1,20)
+			.setMultiplier(1) // set the sensitifity of the numberbox
+			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+			.setValue(NUMBER_OF_PATHS)
+			.setDecimalPrecision(0)
+			.setId(10)
+			;
+
+		marginOfPathControl = cp5.addNumberbox("Margin Of Path")
+			.setPosition(100,725)
+			.setSize(100,20)
+			.setRange(1,20)
+			.setMultiplier(1) // set the sensitifity of the numberbox
+			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+			.setValue(MARGIN_OF_PATH)
+			.setDecimalPrecision(0)
+			.setId(11)
+			;
+
 		twistControl = cp5.addToggle("Use Twists")
 			.setPosition(250,100)
 			.setSize(20,20)
 			.setValue(useTwists)
 			;
+		
 		
 		twistControl
 			.getCaptionLabel()
@@ -236,6 +262,8 @@ class Editor {
 		randomizeEndsControl.setValue(randomizeEnds);
 		roughLinesControl.setValue(useRoughLines);
 		useFillsControl.setValue(useFills);
+		numbersOfPathControl.setValue(NUMBER_OF_PATHS);
+		marginOfPathControl.setValue(MARGIN_OF_PATH);
 	}
 	
 	
@@ -247,6 +275,8 @@ class Editor {
 	void hide() {
 		PRINT_W_INCHES = widthControl.getValue();
 		PRINT_H_INCHES = heightControl.getValue();
+		NUMBER_OF_PATHS = int(numbersOfPathControl.getValue());
+		MARGIN_OF_PATH = int(marginOfPathControl.getValue());
 		GRID_W = int(colsControl.getValue());
 		GRID_H = int(rowsControl.getValue());
 		penSizeMM = penSizeControl.getValue();
@@ -266,7 +296,7 @@ class Editor {
 	void draw() {
 		fill(50, 150);
 		noStroke();
-		rect(50, 50, 400, 650, 8);
+		rect(50, 50, 400, 850, 8);
 		
 		if(controlsVisible && !cp5.isVisible()){
 			cp5.show();
@@ -279,6 +309,8 @@ class Editor {
 			PRINT_H_INCHES != heightControl.getValue() ||
 			GRID_W != int(colsControl.getValue())||
 			GRID_H != int(rowsControl.getValue()) ||
+			NUMBER_OF_PATHS != int(numbersOfPathControl.getValue()) ||
+			MARGIN_OF_PATH != int(marginOfPathControl.getValue()) ||
 			MARGIN_INCHES != marginControl.getValue()
 		);
 	}
@@ -290,13 +322,14 @@ class Editor {
 			PRINT_W_INCHES = widthControl.getValue();
 			PRINT_H_INCHES = heightControl.getValue();
 			MARGIN_INCHES = marginControl.getValue();
+			MARGIN_OF_PATH = int(marginOfPathControl.getValue());
 			GRID_W = int(colsControl.getValue());
 			GRID_H = int(rowsControl.getValue());
 			penSizeMM = penSizeControl.getValue();
 			strokeSize = calculateStrokeSize();
 			minLength = int(minLengthControl.getValue());
 			maxLength = int(maxLengthControl.getValue());
-
+			NUMBER_OF_PATHS = int(numbersOfPathControl.getValue());
 			useTwists = twistControl.getState();
 			useJoiners = joinControl.getState();
 			allowOverlap = overlapControl.getState();

@@ -15,7 +15,8 @@ float PRINT_W_INCHES = 11;
 float PRINT_H_INCHES = 14;
 int PRINT_RESOLUTION = 300;
 float MARGIN_INCHES = 0.5;
-
+int NUMBER_OF_PATHS = 1;
+int MARGIN_OF_PATH = 10;
 float MAT_W_INCHES = 10.75;
 float MAT_H_INCHES = 13.75;
 
@@ -186,9 +187,25 @@ void draw() {
 		if(showGrid){ drawGrid();}
 		
 		colorMode(HSB, 360, 100, 100);
+
 		for(int i=0; i < noodles.length; i++){
 			if(noodles[i] != null){
-				noodles[i].draw(TILE_SIZE, noodleThicknessPct, useTwists);
+				int pathIndex = i % NUMBER_OF_PATHS;
+				
+				// Calcoliamo la nuova percentuale di spessore basata sull'indice e sul MARGIN_OF_PATH
+				// Spessore originale in pixel
+				float baseThickness = TILE_SIZE * noodleThicknessPct;
+				// Riduzione: ogni step verso l'interno riduce lo spessore di (2 * MARGIN)
+				// pathIndex 0 (esterno) -> riduzione 0
+				// pathIndex 1 -> riduzione 2 * MARGIN
+				float reduction = pathIndex * 2 * MARGIN_OF_PATH;
+				float currentThickness = baseThickness - reduction;
+				
+				// Se lo spessore è valido (> 0), disegniamo
+				if(currentThickness > 0){
+					float currentPct = currentThickness / (float)TILE_SIZE;
+					noodles[i].draw(TILE_SIZE, currentPct, useTwists);
+				}
 			}
 		}	
 		
@@ -253,7 +270,7 @@ void reset() {
 	updateKeyDimensions();
 
 	cells = copyBlackoutCells();
-	noodles = new Noodle[numNoodles];
+	noodles = new Noodle[numNoodles * NUMBER_OF_PATHS];
 	
 	int hueRange = 200;//floor(random(0, 310));
 	// int sat = floor(random(60, 80));
@@ -280,8 +297,11 @@ void reset() {
 			int sat = 70; //floor(random(60, 80));
 			int brt = 90; //floor(random(80, 100));
 			color fillColor = color(hue, sat, brt);
-			noodles[noodleCount] = new Noodle(p, TILE_SIZE, head, tail, gfx.joiners, twist, twistFill, fillColor, millis());
-			noodleCount++;
+			
+			for(int j=0; j < NUMBER_OF_PATHS; j++){
+				noodles[noodleCount] = new Noodle(p, TILE_SIZE, head, tail, gfx.joiners, twist, twistFill, fillColor, millis());
+				noodleCount++;
+			}
 		}
 	}
 	

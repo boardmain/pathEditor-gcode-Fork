@@ -27,6 +27,12 @@ void onConfigSelected(File config) {
 }
 
 void parseConfigObject(JSONObject obj) {
+	if(!obj.isNull("numberOfPaths")){
+		NUMBER_OF_PATHS = obj.getInt("numberOfPaths");
+	}
+	if(!obj.isNull("marginOfPath")){
+		MARGIN_OF_PATH = obj.getInt("marginOfPath");
+	}
 	if(!obj.isNull("printWidthInches")){
 		PRINT_W_INCHES = obj.getFloat("printWidthInches");
 	}

@@ -19,7 +19,8 @@ void drawInfoPanel() {
     booleanText("      JOINS: ", useJoiners, 32, 200);
     booleanText("   OVERLAPS: ", allowOverlap, 32, 216);
     booleanText("RANDOM ENDS: ", randomizeEnds, 32, 232);
-
+    text("   NUMBER_OF_PATHS: " + NUMBER_OF_PATHS, 32,248);
+    text(" MARGIN_OF_PATH: " + MARGIN_OF_PATH, 32,264);
 }
 
 String getCheckMark(boolean val) {
