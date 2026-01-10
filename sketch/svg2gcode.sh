@@ -21,6 +21,7 @@ PENDOWN="${3:-7}"
 SPEED="${4:-2000}"
 WIDTH="${5:-297}"
 HEIGHT="${6:-420}"
+MARGIN="${7:-10}"
 
 if [[ ! -f "$INPUT" ]]; then
   echo "Errore: file non trovato: $INPUT"
@@ -73,7 +74,7 @@ vpype -c "$TMP_CFG" \
   linesimplify --tolerance 0.05mm \
   linesort \
   rotate 90 \
-  layout --fit-to-margins 10mm --align left --valign bottom ${WIDTH}mmx${HEIGHT}mm \
+  layout --fit-to-margins ${MARGIN}mm --align left --valign bottom ${WIDTH}mmx${HEIGHT}mm \
   gwrite -p default \
   "$OUTPUT"
 

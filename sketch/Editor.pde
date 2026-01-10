@@ -277,7 +277,7 @@ class Editor {
 			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
 			.setPaddingX(10)
 			;
-		reduceCurveSpeedControl = cp5.addToggle("Reduce Curve Speed")
+		reduceCurveSpeedControl = cp5.addToggle("gcode")
 			.setPosition(250,400)
 			.setSize(20,20)
 			.setValue(reduceCurveSpeed)

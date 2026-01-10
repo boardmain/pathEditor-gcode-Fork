@@ -243,7 +243,8 @@ void draw() {
 				str(TOOL_DOWN_MM),
 				str(TOOL_SPEED_MM_PER_MIN),
 				str(PRINT_W_MM),
-				str(PRINT_H_MM)
+				str(PRINT_H_MM),
+				str(MARGIN_MM)
 			};
 			
 			println("Executing conversion: " + join(cmd, " "));
