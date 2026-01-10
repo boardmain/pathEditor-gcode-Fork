@@ -1,7 +1,7 @@
 int variance = 3;
 int smoothness = 20;
 
-void roughLineH(int px, int py, float width) {
+void roughLineH(float px, float py, float width) {
     
     float scale = width / 100;
 
@@ -20,7 +20,7 @@ void roughLineH(int px, int py, float width) {
 }
     
 
-void roughLineV(int px, int py, float height) {
+void roughLineV(float px, float py, float height) {
     float scale = height / 100;
 
     PVector p1 = new PVector(px, py);

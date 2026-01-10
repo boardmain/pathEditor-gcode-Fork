@@ -11,8 +11,8 @@ String TWIST_FILL_PATH = "graphics/twistFill.svg";
 
 float MAX_SCREEN_SCALE = 0.182 * 2; // % - (0.2456 == macbook 1:1) (0.182 == LG Screen)
 float SCREEN_SCALE = 0.182 * 2; 
-float PRINT_W_MM = 210;
-float PRINT_H_MM = 297;
+float PRINT_W_MM = 297;
+float PRINT_H_MM = 210;
 int PRINT_RESOLUTION = 300;
 float MARGIN_MM = 15;
 int NUMBER_OF_PATHS = 1;

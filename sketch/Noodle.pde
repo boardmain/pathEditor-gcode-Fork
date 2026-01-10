@@ -1,6 +1,6 @@
 class Noodle {
-	int margin = 0;
-	int thickness = 10;
+	float margin = 0;
+	float thickness = 10;
 	float thicknessPct = 0.5;
 	int tileSize = 0;
 	
@@ -18,9 +18,9 @@ class Noodle {
 	void calculateSizes(int tileW, float pct) {
 		tileSize = tileW;
 		thicknessPct = pct;
-		thickness = int(tileSize * thicknessPct);
-		thickness = (thickness / 2) * 2;
-		margin = (tileSize - thickness) / 2;
+		thickness = (float)tileSize * thicknessPct;
+		
+		margin = (tileSize - thickness) / 2.0;
 	}
 
 	Noodle(Point[] p, int tileW, PShape h, PShape t, PShape[] j, PShape tw, PShape twf,color fc, int rs) {
