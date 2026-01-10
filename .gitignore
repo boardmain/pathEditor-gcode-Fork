@@ -1,0 +1,5 @@
+build-tmp
+/sketch/output
+/.vscode
+/sketch/out
+.DS_Store
