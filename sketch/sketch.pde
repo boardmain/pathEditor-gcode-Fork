@@ -50,8 +50,11 @@ int editingNoodle = 0;
 int[][] blackoutCells;
 int[][] cellGroups;
 ArrayList<Integer> exportGroupQueue = new ArrayList<Integer>();
+ArrayList<String> filesToConvert = new ArrayList<String>();
+Process currentConversionProcess = null;
 int currentExportGroup = 0;
 String exportBaseName = "";
+boolean autoConvertGroups = false;
 
 boolean saveFile = false;
 boolean autoConvertGcode = false;
@@ -189,23 +192,59 @@ void drawBG() {
 void draw() {
 	colorMode(RGB, 255,255,255);
 	
-	// Handle Export Queue
-    if (imgSaver.state == SaveState.NONE && exportGroupQueue.size() > 0) {
-        int grp = exportGroupQueue.remove(0);
-        currentExportGroup = grp;
-        fileNameToSave = exportBaseName + "_group_" + grp;
-        
-        int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
-        int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
-        if(USE_RETINA){
-            _plotW = _plotW * 2;
-            _plotH = _plotH * 2;
+	// Handle Export and Conversion Queue
+    if (imgSaver.state == SaveState.NONE) {
+        // 1. Finish current group if one was processing
+        if (currentExportGroup > 0) {
+            println("Export complete for group " + currentExportGroup);
+            if (autoConvertGroups) {
+                filesToConvert.add("output/" + fileNameToSave + ".svg");
+            }
+            currentExportGroup = 0;
         }
-        imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
-        println("Exporting group " + grp);
-    } else if (imgSaver.state == SaveState.NONE && currentExportGroup > 0) {
-        currentExportGroup = 0;
-        println("Export complete.");
+
+        // 2. Start next group SVG creation if available
+        if (exportGroupQueue.size() > 0) {
+            int grp = exportGroupQueue.remove(0);
+            currentExportGroup = grp;
+            fileNameToSave = exportBaseName + "_group_" + grp;
+            
+            int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+            int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+            if(USE_RETINA){
+                _plotW = _plotW * 2;
+                _plotH = _plotH * 2;
+            }
+            imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
+            println("Starting export for group " + grp);
+        }
+        
+        // 3. Process GCode Conversion Queue (only if SVG export is done)
+        else if (autoConvertGroups && (filesToConvert.size() > 0 || currentConversionProcess != null)) {
+            
+            if (currentConversionProcess != null) {
+                // Check if process is still running
+                 try {
+                     // exitValue throws exception if process is not finished
+                    int exitVal = currentConversionProcess.exitValue();
+                    println("Conversion process finished with exit code: " + exitVal);
+                    currentConversionProcess = null;
+                } catch (IllegalThreadStateException e) {
+                    // Process is still running, do nothing
+                }
+            }
+            
+            if (currentConversionProcess == null && filesToConvert.size() > 0) {
+                String nextFile = filesToConvert.remove(0);
+                println("Starting conversion for: " + nextFile);
+                currentConversionProcess = runSvgToGcodeProcess(nextFile);
+            }
+        }
+        
+        else if (autoConvertGroups && exportGroupQueue.isEmpty() && filesToConvert.isEmpty() && currentConversionProcess == null && currentExportGroup == 0) {
+             println("All batch operations completed.");
+             autoConvertGroups = false;
+        }
     }
 	
 	pushMatrix();
@@ -221,6 +260,11 @@ void draw() {
 		if(showGrid){ drawGrid();}
 		
 		colorMode(HSB, 360, 100, 100);
+
+        // Draw registration marks if exporting a group to ensure alignment
+        if (currentExportGroup > 0) {
+            drawRegistrationMarks();
+        }
 
 		for(int i=0; i < noodles.length; i++){
 			if(noodles[i] != null){
@@ -260,33 +304,85 @@ void draw() {
 
 		if(autoConvertGcode && imgSaver.state == SaveState.COMPLETE) {
 			String svgPath = "output/" + fileNameToSave + ".svg";
-			String scriptPath = sketchPath("svg2gcode.sh");
-			String absSvgPath = sketchPath(svgPath);
-			
-			String[] cmd = {
-				scriptPath,
-				absSvgPath,
-				str(TOOL_UP_MM),
-				str(TOOL_DOWN_MM),
-				str(TOOL_SPEED_MM_PER_MIN),
-				str(PRINT_W_MM),
-				str(PRINT_H_MM),
-				str(MARGIN_MM)
-			};
-			
-			println("Executing conversion: " + join(cmd, " "));
-			try {
-				exec(cmd);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
+			runSvgToGcode(svgPath);
 			autoConvertGcode = false;
 		}
 	popMatrix();
 	if(EDIT_MODE) {
 		editor.draw();
 	} 
+}
+
+void runSvgToGcode(String svgPath) {
+    runSvgToGcodeProcess(svgPath);
+}
+
+Process runSvgToGcodeProcess(String svgPath) {
+	String scriptPath = sketchPath("svg2gcode.sh");
+	String absSvgPath = sketchPath(svgPath);
+	
+	String[] cmd = {
+		scriptPath,
+		absSvgPath,
+		str(TOOL_UP_MM),
+		str(TOOL_DOWN_MM),
+		str(TOOL_SPEED_MM_PER_MIN),
+		str(PRINT_W_MM),
+		str(PRINT_H_MM),
+		str(MARGIN_MM)
+	};
+	
+	println("Executing conversion: " + join(cmd, " "));
+	try {
+        // exec returns a Process object
+		return exec(cmd);
+	} catch (Exception e) {
+		e.printStackTrace();
+        return null;
+	}
+}
+
+void drawRegistrationMarks() {
+    pushMatrix();
+    noFill();
+    stroke(0); // Black marks
+    
+    // Calculate mark size relative to tile size or fixed
+    float markSize = 4; // Small enough to be filtered (< 2mm usually) but visible for bounding box
+    // 2mm is roughly 6-8 pixels at 96dpi, or depending on scale.
+    // If we filter < 2mm in vpype:
+    // We need markSize to constitute a line length < 2mm.
+    // Let's make individual legs of the mark 1.5mm approx?
+    // PRINT_RESOLUTION is 300. 1mm = 11.8 px.
+    // So 2mm is ~23px.
+    // markSize = 10 px is < 1mm. Safe to filter with --min-length 2mm.
+    markSize = 10; 
+    
+    strokeWeight(1); 
+
+    // Top-Left
+    line(0, 0, markSize, 0);
+    line(0, 0, 0, markSize);
+    
+    // Top-Right
+    float w = GRID_W * TILE_SIZE;
+    line(w, 0, w - markSize, 0);
+    line(w, 0, w, markSize);
+    
+    // Bottom-Left
+    float h = GRID_H * TILE_SIZE;
+    line(0, h, 0, h - markSize);
+    line(0, h, markSize, h);
+    
+    // Bottom-Right
+    line(w, h, w - markSize, h);
+    line(w, h, w, h - markSize);
+    
+    // Center Cross for extra alignment help? Optional, but user asked for "alignment marks"
+    // line(w/2 - markSize, h/2, w/2 + markSize, h/2);
+    // line(w/2, h/2 - markSize, w/2, h/2 + markSize);
+    
+    popMatrix();
 }
 
 int[][] copyBlackoutCells() {
@@ -502,11 +598,19 @@ void keyPressed() {
 			}
 			break;
 		case 'k':
+        case 'K':
+        case 'j':
+        case 'J':
 			// Start Group Export
 			if (cellGroups == null) {
 				println("No groups defined.");
 				break;
 			}
+            
+            // Set conversion flag based on key
+            autoConvertGroups = (key == 'j' || key == 'J');
+            filesToConvert.clear(); // Clear pending conversions
+
 			HashSet<Integer> uniqueGroups = new HashSet<Integer>();
 			for (int col = 0; col < cellGroups.length; col++) {
 				for (int row = 0; row < cellGroups[col].length; row++) {

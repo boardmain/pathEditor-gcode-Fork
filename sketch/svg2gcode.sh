@@ -78,4 +78,8 @@ vpype -c "$TMP_CFG" \
   gwrite -p default \
   "$OUTPUT"
 
+# Clean registration marks
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+"$DIR/remove_marks.sh" "$OUTPUT"
+
 echo "OK: creato \"$OUTPUT\" (penup=$PENUP pendown=$PENDOWN speed=$SPEED size=${WIDTH}x${HEIGHT}mm)"
