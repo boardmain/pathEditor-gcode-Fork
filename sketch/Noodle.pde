@@ -151,7 +151,7 @@ class Noodle {
 		horizontalShape(joiners[type-1]);
 	}
 	
-	void drawNoodle(boolean useTwists) {
+	void drawNoodle(boolean useTwists, int filterGroup) {
 		randomSeed(seed);
 		
 		boolean fills = useFills;
@@ -160,6 +160,25 @@ class Noodle {
 		for(int j = start ; j < 2; j++){
 			
 			for(int i = 0; i < path.length; i++){
+				Point p = path[i];
+				
+				// Filter by group logic
+				if (filterGroup > 0) {
+					// Assuming cellGroups is accessible globally from sketch.pde
+					// We need to check bounds to be safe
+					if (cellGroups != null && 
+						p.x >= 0 && p.x < cellGroups.length &&
+						p.y >= 0 && p.y < cellGroups[0].length) {
+						
+						if (cellGroups[p.x][p.y] != filterGroup) {
+							continue; // Skip this cell if not in the target group
+						}
+					} else {
+						// If cellGroups is null or out of bounds, maybe skip or draw? 
+						// Safest is to skip if we are in filtering mode
+						continue; 
+					}
+				}
 				
 				if(j == 0){
 					noStroke();
@@ -171,7 +190,7 @@ class Noodle {
 					noFill();
 					strokeWeight(strokeSize);
 				}
-				Point p = path[i];
+				// Point p = path[i]; // removed duplicate
 				
 				pushMatrix();
 				translate(p.x * tileSize, p.y * tileSize);
@@ -226,12 +245,12 @@ class Noodle {
 		}
 	}
 	
-	void draw(int size, float pct, boolean useTwists) {
+	void draw(int size, float pct, boolean useTwists, int filterGroup) {
 		if(tileSize != size || thicknessPct != pct){
 			calculateSizes(size, pct);
 		}
 		
-		drawNoodle(useTwists);
+		drawNoodle(useTwists, filterGroup);
 	}
 
 	void verticalCrossed(boolean isFill) {

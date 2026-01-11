@@ -2,6 +2,9 @@
 
 import controlP5.*;
 import processing.svg.*;
+import javax.swing.JOptionPane;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 Boolean USE_RETINA = true;
 
@@ -41,9 +44,14 @@ boolean EDIT_MODE = false;
 boolean BLACKOUT_MODE = false;
 boolean CELLTYPE_MODE = false;
 boolean PATH_EDIT_MODE = false;
+boolean GROUP_SELECT_MODE = false;
 
 int editingNoodle = 0;
 int[][] blackoutCells;
+int[][] cellGroups;
+ArrayList<Integer> exportGroupQueue = new ArrayList<Integer>();
+int currentExportGroup = 0;
+String exportBaseName = "";
 
 boolean saveFile = false;
 boolean autoConvertGcode = false;
@@ -181,6 +189,25 @@ void drawBG() {
 void draw() {
 	colorMode(RGB, 255,255,255);
 	
+	// Handle Export Queue
+    if (imgSaver.state == SaveState.NONE && exportGroupQueue.size() > 0) {
+        int grp = exportGroupQueue.remove(0);
+        currentExportGroup = grp;
+        fileNameToSave = exportBaseName + "_group_" + grp;
+        
+        int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+        int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+        if(USE_RETINA){
+            _plotW = _plotW * 2;
+            _plotH = _plotH * 2;
+        }
+        imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
+        println("Exporting group " + grp);
+    } else if (imgSaver.state == SaveState.NONE && currentExportGroup > 0) {
+        currentExportGroup = 0;
+        println("Export complete.");
+    }
+	
 	pushMatrix();
 		drawBG();
 		if(showInfoPanel) drawInfoPanel();
@@ -222,7 +249,7 @@ void draw() {
 				// Nota: >= 0 permette di disegnare la linea singola (thickness 0)
 				if(currentThickness >= 0){
 					float currentPct = currentThickness / (float)TILE_SIZE;
-					noodles[i].draw(TILE_SIZE, currentPct, useTwists);
+					noodles[i].draw(TILE_SIZE, currentPct, useTwists, currentExportGroup);
 				}
 			}
 		}	
@@ -281,8 +308,15 @@ void updateBlackoutCells() {
 	}
 }
 
+void updateCellGroups() {
+	if(cellGroups == null || GRID_W != cellGroups.length || GRID_H != cellGroups[0].length){
+		cellGroups = new int[GRID_W][GRID_H];
+	}
+}
+
 void updateKeyDimensions() {
 	updateBlackoutCells();
+	updateCellGroups();
 	calculateScreenScale();
 	calculateTileSize();
 	strokeSize = calculateStrokeSize();
@@ -308,6 +342,15 @@ color getColorForCellType(int cellType) {
 		color(255, 0, 255, 100)};
 
 	return colors[cellType];
+}
+
+color getColorForGroup(int groupId) {
+	if (groupId <= 0) return color(0, 0);
+	// Generate a color based on group ID
+	float r = (groupId * 123456) % 255;
+	float g = (groupId * 654321) % 255;
+	float b = (groupId * 321654) % 255;
+	return color(r, g, b, 150);
 }
 
 void reset() {
@@ -441,6 +484,13 @@ void keyPressed() {
 		case 'c' :
 			CELLTYPE_MODE = !CELLTYPE_MODE;
 			break;
+		case 'w' :
+		case 'W' :
+			GROUP_SELECT_MODE = !GROUP_SELECT_MODE;
+			if(GROUP_SELECT_MODE){
+				showGrid = true;
+			}
+			break;
 		case 'i' :
 			importMaskImage();
 			break;
@@ -449,6 +499,33 @@ void keyPressed() {
 				processMaskData();
 			} else {
 				importMaskImage();
+			}
+			break;
+		case 'k':
+			// Start Group Export
+			if (cellGroups == null) {
+				println("No groups defined.");
+				break;
+			}
+			HashSet<Integer> uniqueGroups = new HashSet<Integer>();
+			for (int col = 0; col < cellGroups.length; col++) {
+				for (int row = 0; row < cellGroups[col].length; row++) {
+					if (cellGroups[col][row] > 0) {
+						uniqueGroups.add(cellGroups[col][row]);
+					}
+				}
+			}
+			
+			if (uniqueGroups.isEmpty()) {
+				println("No groups found to export.");
+			} else {
+				exportGroupQueue.clear();
+				exportGroupQueue.addAll(uniqueGroups);
+				// Sort to export in order 1, 2, 3...
+				java.util.Collections.sort(exportGroupQueue);
+				
+				exportBaseName = getFileName();
+				println("Starting export for groups: " + exportGroupQueue);
 			}
 			break;
 	}
@@ -482,6 +559,18 @@ void mousePressed() {
 				blackoutCells[cell.x][cell.y] = CellType.BLACKOUT;
 			}
 		} 
+	} else if (GROUP_SELECT_MODE) {
+		if(cell.x >= 0 && cell.y >= 0 && cellGroups != null && cell.x < cellGroups.length && cell.y < cellGroups[0].length){
+			String input = JOptionPane.showInputDialog("Enter group number (0 to clear):", str(cellGroups[cell.x][cell.y]));
+			if (input != null) {
+				try {
+					int group = int(input);
+					cellGroups[cell.x][cell.y] = group;
+				} catch (Exception e) {
+					println("Invalid input");
+				}
+			}
+		}
 	} else if(PATH_EDIT_MODE){
 		if(shiftIsDown){
 			editingNoodle = findNoodleWithCell(cell.x, cell.y);
@@ -534,10 +623,19 @@ void drawCellTypes() {
 				fill(0, 255, 0, 25);
 			} else if(CELLTYPE_MODE){
 				fill(getColorForCellType(cells[col][row]));
+			} else if(GROUP_SELECT_MODE && cellGroups[col][row] > 0){
+				fill(getColorForGroup(cellGroups[col][row]));
 			} else {
 				noFill();
 			}
 			rect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			
+			if(GROUP_SELECT_MODE && cellGroups[col][row] > 0){
+				fill(0);
+				textAlign(CENTER, CENTER);
+				textSize(TILE_SIZE/3);
+				text(str(cellGroups[col][row]), col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2);
+			}
 		}
 	}
 	popMatrix();
@@ -558,7 +656,7 @@ void drawGridLines() {
 
 void drawGrid() {
 
-	if(BLACKOUT_MODE || PATH_EDIT_MODE || CELLTYPE_MODE){
+	if(BLACKOUT_MODE || PATH_EDIT_MODE || CELLTYPE_MODE || GROUP_SELECT_MODE){
 		if(imgSaver.state != SaveState.SAVING){
 			drawCellTypes();
 		}
