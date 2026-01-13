@@ -597,6 +597,17 @@ void keyPressed() {
 				importMaskImage();
 			}
 			break;
+		case 'h':
+		case 'H':
+			if (cellGroups != null) {
+				for(int col = 0; col < cellGroups.length; col++){
+					for(int row = 0; row < cellGroups[col].length; row++){
+						cellGroups[col][row] = 0;
+					}
+				}
+				println("Group selections cleared");
+			}
+			break;
 		case 'k':
         case 'K':
         case 'j':

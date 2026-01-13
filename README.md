@@ -76,6 +76,14 @@ These SVGs should be drawn vertically and sized so they will intercept noodle ed
 
 **`S`**: Save a plot-ready SVG with associated data to the `output` folder.
 
+**`W`**: Toggle [Group Select Mode](#group-select-mode)
+
+**`H`**: Clear the [Group selection](#group-select-mode).
+
+**`K`**: Export SVGs for each defined group separately.
+
+**`J`**: Export SVGs for each group and automatically Convert to G-code.
+
 **`BACKSPACE`**: Delete the selected noodle
 
 ### Editor View
@@ -99,6 +107,14 @@ Toggle Path Edit Mode with **`P`**. Shift-click any noodle to select it. The cel
 Click the cell at either end the selected noodle to delete it. Click a cell adjacent to either end to extend the noodle into that cell.
 
 Click any straight section of the selected noodle to cycle through the available joiner and twist graphics.
+
+### Group Select Mode
+
+Assign grid cells to numbered groups to export them separately.
+
+Toggle Group Select Mode with **`W`**. Click any cell to assign it to a group. A dialog will ask for a Group Number (e.g. 1, 2, 3). Enter `0` to remove the cell from any group.
+
+When you export using **`K`** or **`J`**, separate files will be created for each group (e.g. `filename_group_1.svg`), maintaining their relative positions for multi-pass plotting.
 
 ### Mask Images
 
