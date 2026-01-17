@@ -58,6 +58,7 @@ boolean autoConvertGroups = false;
 
 boolean saveFile = false;
 boolean autoConvertGcode = false;
+boolean useSmartFill = false;
 
 Noodle noodle; 
 Noodle noodle2;
@@ -461,7 +462,12 @@ void reset() {
 	
 	int noodleCount = 0;
 	for(int i=0; i < numNoodles; i++){
-		Point[] p = createNoodlePath(cells);
+		Point[] p = null;
+    if (useSmartFill) {
+      p = createSmartPath(cells);
+    } else {
+      p = createNoodlePath(cells);
+    }
 		
 		if(p != null){
 			int graphicIndex = floor(random(0, graphicSets.length));
@@ -586,6 +592,10 @@ void keyPressed() {
 			if(GROUP_SELECT_MODE){
 				showGrid = true;
 			}
+			break;
+		case 'u':
+		case 'U':
+			importImageShape();
 			break;
 		case 'i' :
 			importMaskImage();
