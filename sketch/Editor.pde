@@ -18,6 +18,7 @@ class Editor {
 			  speedControl,
 			  toolDownControl;
 			  
+			  
 	ScrollableList paperSizeControl;
 
 	Toggle twistControl,
@@ -25,7 +26,8 @@ class Editor {
 	       overlapControl,
 		   randomizeEndsControl,
 		   roughLinesControl,
-		   reduceCurveSpeedControl,
+		   drawUnderLineControl,
+		   exportGrupedControl,
 		   useFillsControl;
 	
 	boolean controlsVisible = false;
@@ -141,7 +143,7 @@ class Editor {
 		maxLengthControl = cp5.addNumberbox("Max Length")
 			.setPosition(100,550)
 			.setSize(100,20)
-			.setRange(10,5000)
+			.setRange(10,8000)
 			.setMultiplier(1) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
 			.setValue(penSizeMM)
@@ -164,7 +166,7 @@ class Editor {
 		numbersOfPathControl = cp5.addNumberbox("Numero Path")
 			.setPosition(100,675)
 			.setSize(100,20)
-			.setRange(1,20)
+			.setRange(1,30)
 			.setMultiplier(1) // set the sensitifity of the numberbox
 			.setDirection(Controller.HORIZONTAL) // change the control direction to left/right
 			.setValue(NUMBER_OF_PATHS)
@@ -277,13 +279,26 @@ class Editor {
 			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
 			.setPaddingX(10)
 			;
-		reduceCurveSpeedControl = cp5.addToggle("gcode")
+			
+		drawUnderLineControl = cp5.addToggle("Draw Under Line")
 			.setPosition(250,400)
 			.setSize(20,20)
-			.setValue(reduceCurveSpeed)
+			.setValue(drawUnderLine)
 			;
 		
-		reduceCurveSpeedControl
+		drawUnderLineControl
+			.getCaptionLabel()
+			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
+			.setPaddingX(10)
+			;
+
+		exportGrupedControl = cp5.addToggle("Export Gruped")
+			.setPosition(250,450)
+			.setSize(20,20)
+			.setValue(exportGrouped)
+			;
+		
+		exportGrupedControl
 			.getCaptionLabel()
 			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
 			.setPaddingX(10)
@@ -311,9 +326,10 @@ class Editor {
 		useFillsControl.setValue(useFills);
 		numbersOfPathControl.setValue(NUMBER_OF_PATHS);
 		marginOfPathControl.setValue(MARGIN_OF_PATH);
-		reduceCurveSpeedControl.setValue(reduceCurveSpeed);
+		drawUnderLineControl.setValue(drawUnderLine);
 		speedControl.setValue(TOOL_SPEED_MM_PER_MIN);
 		toolDownControl.setValue(TOOL_DOWN_MM);
+		exportGrupedControl.setValue(exportGrouped);
 	}
 	
 	
@@ -339,7 +355,8 @@ class Editor {
 		allowOverlap = overlapControl.getState();
 		useRoughLines = roughLinesControl.getState();
 		useFills = useFillsControl.getState();
-		reduceCurveSpeed = reduceCurveSpeedControl.getState();
+		drawUnderLine = drawUnderLineControl.getState();
+		exportGrouped = exportGrupedControl.getState();
 		controlsVisible = false;
 		cp5.hide();
 		
@@ -416,7 +433,8 @@ class Editor {
 			randomizeEnds = randomizeEndsControl.getState();
 			useRoughLines = roughLinesControl.getState();
 			useFills = useFillsControl.getState();
-			reduceCurveSpeed = reduceCurveSpeedControl.getState();
+			drawUnderLine = drawUnderLineControl.getState();
+			exportGrouped = exportGrupedControl.getState();
 			if(updateSizes){
 				updateKeyDimensions();
 			}

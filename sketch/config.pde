@@ -88,8 +88,11 @@ void parseConfigObject(JSONObject obj) {
 	if(!obj.isNull("toolSpeedMmPerMin")){
 		TOOL_SPEED_MM_PER_MIN = obj.getInt("toolSpeedMmPerMin");
 	}
-	if(!obj.isNull("reduceCurveSpeed")){
-		reduceCurveSpeed = obj.getBoolean("reduceCurveSpeed");
+	if(!obj.isNull("drawUnderLine")){
+		drawUnderLine = obj.getBoolean("drawUnderLine");
+	}
+	if(!obj.isNull("exportGrouped")){
+		exportGrouped = obj.getBoolean("exportGrouped");
 	}
 	if(!obj.isNull("graphics")){
 		JSONArray gfx = obj.getJSONArray("graphics");

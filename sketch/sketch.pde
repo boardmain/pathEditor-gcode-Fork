@@ -56,6 +56,11 @@ int currentExportGroup = 0;
 String exportBaseName = "";
 boolean autoConvertGroups = false;
 
+// Noodle Export Queue
+ArrayList<Integer> exportNoodleQueue = new ArrayList<Integer>();
+int currentExportNoodleIndex = -1;
+boolean autoConvertNoodles = false;
+
 boolean saveFile = false;
 boolean autoConvertGcode = false;
 boolean useSmartFill = false;
@@ -86,7 +91,8 @@ boolean allowOverlap = true;
 boolean showInfoPanel = false;
 boolean useRoughLines = false;
 boolean useFills = true;
-boolean reduceCurveSpeed = false;
+boolean drawUnderLine = false;
+boolean exportGrouped = false;
 
 int minLength = 200;
 int maxLength = 1000;
@@ -204,6 +210,15 @@ void draw() {
             currentExportGroup = 0;
         }
 
+        // 1b. Finish current noodle if one was processing
+        if (currentExportNoodleIndex != -1) {
+            println("Export complete for noodle " + currentExportNoodleIndex);
+            if (autoConvertNoodles) {
+                filesToConvert.add("output/" + fileNameToSave + ".svg");
+            }
+            currentExportNoodleIndex = -1;
+        }
+
         // 2. Start next group SVG creation if available
         if (exportGroupQueue.size() > 0) {
             int grp = exportGroupQueue.remove(0);
@@ -219,9 +234,24 @@ void draw() {
             imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
             println("Starting export for group " + grp);
         }
+        // 2b. Start next noodle SVG creation if available
+        else if (exportNoodleQueue.size() > 0) {
+            int idx = exportNoodleQueue.remove(0);
+            currentExportNoodleIndex = idx;
+            fileNameToSave = exportBaseName + "_path_" + idx;
+            
+            int _plotW = int((PRINT_W_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+            int _plotH = int((PRINT_H_MM / 25.4) * PRINT_RESOLUTION * SCREEN_SCALE);
+            if(USE_RETINA){
+                _plotW = _plotW * 2;
+                _plotH = _plotH * 2;
+            }
+            imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
+            println("Starting export for noodle " + idx);
+        }
         
         // 3. Process GCode Conversion Queue (only if SVG export is done)
-        else if (autoConvertGroups && (filesToConvert.size() > 0 || currentConversionProcess != null)) {
+        else if ((autoConvertGroups || autoConvertNoodles) && (filesToConvert.size() > 0 || currentConversionProcess != null)) {
             
             if (currentConversionProcess != null) {
                 // Check if process is still running
@@ -242,9 +272,10 @@ void draw() {
             }
         }
         
-        else if (autoConvertGroups && exportGroupQueue.isEmpty() && filesToConvert.isEmpty() && currentConversionProcess == null && currentExportGroup == 0) {
+        else if ((autoConvertGroups || autoConvertNoodles) && exportGroupQueue.isEmpty() && exportNoodleQueue.isEmpty() && filesToConvert.isEmpty() && currentConversionProcess == null && currentExportGroup == 0 && currentExportNoodleIndex == -1) {
              println("All batch operations completed.");
              autoConvertGroups = false;
+             autoConvertNoodles = false;
         }
     }
 	
@@ -263,11 +294,24 @@ void draw() {
 		colorMode(HSB, 360, 100, 100);
 
         // Draw registration marks if exporting a group to ensure alignment
-        if (currentExportGroup > 0) {
+        if (currentExportGroup > 0 || currentExportNoodleIndex != -1) {
             drawRegistrationMarks();
         }
 
 		for(int i=0; i < noodles.length; i++){
+            if (currentExportNoodleIndex != -1) {
+                if (exportGrouped) {
+                    // Check if 'i' belongs to the same logical group as currentExportNoodleIndex
+                    // Group indices are: start, start+1, ... start+NUMBER_OF_PATHS-1
+                    // currentExportNoodleIndex is guaranteed to be a start index (multiple of NUMBER_OF_PATHS)
+                    if (i < currentExportNoodleIndex || i >= currentExportNoodleIndex + NUMBER_OF_PATHS) {
+                        continue;
+                    }
+                } else {
+                     if (i != currentExportNoodleIndex) continue;
+                }
+            } 
+			
 			if(noodles[i] != null){
 				int pathIndex = i % NUMBER_OF_PATHS;
 				
@@ -618,6 +662,43 @@ void keyPressed() {
 				println("Group selections cleared");
 			}
 			break;
+		case 'n':
+		case 'N':
+		    // Export each path (noodle) individually
+		    // Drawing order is 0 to N (bottom to top).
+		    if (noodles == null || noodles.length == 0) {
+		        println("No noodles to export.");
+		    } else {
+		        autoConvertNoodles = true;
+		        filesToConvert.clear();
+		        exportNoodleQueue.clear();
+		        if (exportGrouped) {
+		            // Export logical noodles (grouped paths)
+		            // We only add the first index of each group to the queue.
+		            // The draw loop will handle drawing the siblings if exportGrouped is true.
+		            for (int i = 0; i < noodles.length; i += NUMBER_OF_PATHS) {
+		                 // Check if at least one path in this group is not null (though usually all logic noodles are instantiated together)
+		                 if(noodles[i] != null) {
+		                     exportNoodleQueue.add(i);
+		                 }
+		            }
+		             println("Starting grouped noodle export: " + exportNoodleQueue.size() + " groups.");
+		        } else {
+		             // Existing behavior: Export every single path individually
+                     // Order is critical: External line first, then Internal line
+                     // Since noodles are created in order [Ext, Int, Int...], linear iteration preserves this.
+    		        for (int i = 0; i < noodles.length; i++) {
+    		            if(noodles[i] != null) {
+    		                exportNoodleQueue.add(i);
+    		            }
+    		        }
+    		        println("Starting individual noodle export (Ext->Int): " + exportNoodleQueue.size() + " paths.");
+		        }
+		        
+		        exportBaseName = getFileName();
+		        // println("Starting individual noodle export: " + exportNoodleQueue.size() + " paths.");
+		    }
+		    break;
 		case 'k':
         case 'K':
         case 'j':

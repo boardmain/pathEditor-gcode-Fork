@@ -87,6 +87,11 @@ class Noodle {
 			line(tileSize - margin, 0, tileSize - margin, distToGfx);
 			line(margin, tileSize - distToGfx, margin, tileSize);
 			line(tileSize - margin, tileSize - distToGfx, tileSize-margin, tileSize);
+
+			if (drawUnderLine) {
+                 line(margin, distToGfx, margin, tileSize - distToGfx);
+                 line(tileSize - margin, distToGfx, tileSize - margin, tileSize - distToGfx);
+            }
 		}
 		
 		pushMatrix();
@@ -127,6 +132,11 @@ class Noodle {
 			line( 0,tileSize - margin,  distToGfx, tileSize - margin);
 			line(tileSize - distToGfx, margin,  tileSize, margin );
 			line(tileSize - distToGfx, tileSize - margin,  tileSize, tileSize-margin);
+
+			if (drawUnderLine) {
+			    line(distToGfx, margin, tileSize - distToGfx, margin);
+			    line(distToGfx, tileSize - margin, tileSize - distToGfx, tileSize - margin);
+			}
 		}
 		
 		pushMatrix();
@@ -259,11 +269,15 @@ class Noodle {
 			// rect(margin , tileSize - margin, tileSize - margin * 2, margin);
 			vertical(isFill);
 		} else {
-			line(margin, 0, margin, margin);
-			line(margin, tileSize - margin, margin, tileSize );
-			
-			line(tileSize - margin, 0, tileSize - margin, margin);
-			line(tileSize - margin, tileSize - margin, tileSize - margin, tileSize);
+			if(drawUnderLine){
+				vertical(false);
+			} else {
+				line(margin, 0, margin, margin);
+				line(margin, tileSize - margin, margin, tileSize );
+				
+				line(tileSize - margin, 0, tileSize - margin, margin);
+				line(tileSize - margin, tileSize - margin, tileSize - margin, tileSize);
+			}
 		}
 	}
 
@@ -273,11 +287,15 @@ class Noodle {
 			// rect(tileSize - margin, margin, margin, tileSize - margin *2);
 			horizontal(isFill);
 		} else {
-			line(0, margin, margin, margin);
-			line(tileSize - margin, margin, tileSize, margin);
+			if(drawUnderLine){
+				horizontal(false);
+			} else {
+				line(0, margin, margin, margin);
+				line(tileSize - margin, margin, tileSize, margin);
 
-			line(0, tileSize - margin, margin, tileSize - margin);
-			line(tileSize - margin, tileSize - margin, tileSize, tileSize - margin);
+				line(0, tileSize - margin, margin, tileSize - margin);
+				line(tileSize - margin, tileSize - margin, tileSize, tileSize - margin);
+			}
 		}
 	}
 	

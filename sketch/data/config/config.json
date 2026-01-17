@@ -13,7 +13,8 @@
   "toolUpMM": 0.0,
   "toolSpeedMmPerMin": 2500,
   "numNoodles": 90,
-  "reduceCurveSpeed": false,
+  "drawUnderLine": false,
+  "exportGrouped": false,
   "graphics": [
     {
       "head": "graphics/roundEnd.svg"
