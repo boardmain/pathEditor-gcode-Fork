@@ -514,6 +514,9 @@ void reset() {
     }
 		
 		if(p != null){
+			if (pathIsDuplicate(p, noodles, noodleCount)) {
+				continue;
+			}
 			int graphicIndex = floor(random(0, graphicSets.length));
 			GraphicSet gfx = graphicSets[graphicIndex];
 			PShape head = gfx.head;
@@ -688,7 +691,7 @@ void keyPressed() {
                      // Order is critical: External line first, then Internal line
                      // Since noodles are created in order [Ext, Int, Int...], linear iteration preserves this.
     		        for (int i = 0; i < noodles.length; i++) {
-    		            if(noodles[i] != null) {
+    		            if(noodles[i] != null && isNoodleVisible(i)) {
     		                exportNoodleQueue.add(i);
     		            }
     		        }
@@ -901,4 +904,49 @@ void generateAllGcodes() {
 
 	imgSaver.begin(PRINT_W_MM, PRINT_H_MM, _plotW, _plotH, fileNameToSave);
 	autoConvertGcode = true;
+}
+
+boolean pathIsDuplicate(Point[] p, Noodle[] currentNoodles, int count) {
+  for (int i = 0; i < count; i++) {
+    if (currentNoodles[i] != null && pathsAreEqual(p, currentNoodles[i].path)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+boolean pathsAreEqual(Point[] p1, Point[] p2) {
+  if (p1.length != p2.length) return false;
+  
+  boolean forward = true;
+  for (int i = 0; i < p1.length; i++) {
+    if (p1[i].x != p2[i].x || p1[i].y != p2[i].y) {
+      forward = false;
+      break;
+    }
+  }
+  if (forward) return true;
+  
+  boolean backward = true;
+  for (int i = 0; i < p1.length; i++) {
+    if (p1[i].x != p2[p2.length - 1 - i].x || p1[i].y != p2[p2.length - 1 - i].y) {
+      backward = false;
+      break;
+    }
+  }
+  return backward;
+}
+
+boolean isNoodleVisible(int i) {
+    if (noodles[i] == null) return false;
+    int pathIndex = i % NUMBER_OF_PATHS;
+    float baseThickness = TILE_SIZE * noodleThicknessPct;
+    float reduction = pathIndex * 2 * MARGIN_OF_PATH;
+    float currentThickness = baseThickness - reduction;
+    
+    if(currentThickness < MARGIN_OF_PATH && currentThickness > -MARGIN_OF_PATH){ 
+        currentThickness = 0;
+    }
+    
+    return currentThickness >= 0;
 }
