@@ -250,8 +250,8 @@ void draw() {
             println("Starting export for noodle " + idx);
         }
         
-        // 3. Process GCode Conversion Queue (only if SVG export is done)
-        else if ((autoConvertGroups || autoConvertNoodles) && (filesToConvert.size() > 0 || currentConversionProcess != null)) {
+        // 3. Process GCode Conversion Queue
+        if ((autoConvertGroups || autoConvertNoodles) && (filesToConvert.size() > 0 || currentConversionProcess != null)) {
             
             if (currentConversionProcess != null) {
                 // Check if process is still running

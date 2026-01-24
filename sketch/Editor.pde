@@ -29,6 +29,9 @@ class Editor {
 		   drawUnderLineControl,
 		   exportGrupedControl,
 		   useFillsControl;
+
+	Textarea commandsInfo;
+	Toggle showCommandsControl;
 	
 	boolean controlsVisible = false;
 		
@@ -303,6 +306,51 @@ class Editor {
 			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
 			.setPaddingX(10)
 			;
+
+		showCommandsControl = cp5.addToggle("Show Commands")
+			.setPosition(250,500)
+			.setSize(20,20)
+			.setValue(false)
+			;
+		
+		showCommandsControl
+			.getCaptionLabel()
+			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
+			.setPaddingX(10)
+			;
+
+		commandsInfo = cp5.addTextarea("commandsInfo")
+			.setPosition(470, 50)
+			.setSize(400, 600)
+			.setFont(createFont("Menlo", 12))
+			.setLineHeight(20)
+			.setColor(color(255))
+			.setColorBackground(color(50, 240))
+			.setColorForeground(color(255, 100))
+			.hide()
+			;
+
+		commandsInfo.setText("KEY COMMANDS:\n\n" +
+			"G: Toggle grid visibility\n" +
+			"R: Randomize noodles and redraw\n" +
+			"T: Increase the size of each individual grid cell\n" +
+			"E: Toggle Editor View\n" +
+			"X: Toggle Blackout Mode\n" +
+			"P: Toggle Path Edit Mode\n" +
+			"I: Import a Mask Image\n" +
+			"SHIFT + I: Reprocess a Mask Image\n" +
+			"L: Load a Config File\n" +
+			"Q: Generate GCODE\n" +
+			"S: Save a plot-ready SVG\n" +
+			"W: Toggle Group Select Mode\n" +
+			"H: Clear the Group selection\n" +
+			"K: Export SVGs for each group\n" +
+			"J: Export SVGs for each group & Convert to G-code\n" +
+			"N: Export SVGs for each noodle & Convert to G-code\n" +
+			"C: Toggle Cell Type Mode (Visualization)\n" +
+			"U: Import Image Shape (experimental)\n" +
+			"BACKSPACE: Delete the selected noodle"
+		);
 		
 		hide();
 	}
@@ -330,6 +378,12 @@ class Editor {
 		speedControl.setValue(TOOL_SPEED_MM_PER_MIN);
 		toolDownControl.setValue(TOOL_DOWN_MM);
 		exportGrupedControl.setValue(exportGrouped);
+		
+		if(showCommandsControl.getState()) {
+			commandsInfo.show();
+		} else {
+			commandsInfo.hide();
+		}
 	}
 	
 	
@@ -359,7 +413,7 @@ class Editor {
 		exportGrouped = exportGrupedControl.getState();
 		controlsVisible = false;
 		cp5.hide();
-		
+		commandsInfo.hide(); 
 	}
 	
 	void draw() {
@@ -435,6 +489,13 @@ class Editor {
 			useFills = useFillsControl.getState();
 			drawUnderLine = drawUnderLineControl.getState();
 			exportGrouped = exportGrupedControl.getState();
+			
+			if(showCommandsControl.getState()) {
+				commandsInfo.show();
+			} else {
+				commandsInfo.hide();
+			}
+
 			if(updateSizes){
 				updateKeyDimensions();
 			}
