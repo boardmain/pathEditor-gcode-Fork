@@ -2,16 +2,16 @@
 set -euo pipefail
 
 # Uso:
-#   ./svg2gcode.sh "file.svg" [penup] [pendown] [speed] [width] [height]
+#   ./svg2gcode.sh "file.svg" [penup] [pendown] [speed] [width] [height] [margin] [connect]
 #
 # Esempio:
-#   ./svg2gcode.sh "2026-1-10 16-9-6.svg" 0 7 2000 297 420
+#   ./svg2gcode.sh "2026-1-10 16-9-6.svg" 0 7 2000 297 420 10 true
 #
 # Default se omessi:
-#   penup=0 pendown=7 speed=2000 width=297 height=420
+#   penup=0 pendown=7 speed=2000 width=297 height=420 margin=10 connect=false
 
 if [[ $# -lt 1 ]]; then
-  echo "Uso: $0 \"input.svg\" [penup] [pendown] [speed] [width] [height]"
+  echo "Uso: $0 \"input.svg\" [penup] [pendown] [speed] [width] [height] [margin] [connect]"
   exit 1
 fi
 
@@ -22,6 +22,7 @@ SPEED="${4:-2000}"
 WIDTH="${5:-297}"
 HEIGHT="${6:-420}"
 MARGIN="${7:-10}"
+CONNECT="${8:-false}"
 
 if [[ ! -f "$INPUT" ]]; then
   echo "Errore: file non trovato: $INPUT"
@@ -82,4 +83,18 @@ vpype -c "$TMP_CFG" \
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 "$DIR/remove_marks.sh" "$OUTPUT"
 
-echo "OK: creato \"$OUTPUT\" (penup=$PENUP pendown=$PENDOWN speed=$SPEED size=${WIDTH}x${HEIGHT}mm)"
+# Se richiesto, esegui connect_paths.py per unire i tracciati
+if [[ "$CONNECT" == "true" ]]; then
+  TMP_OUTPUT="${OUTPUT%.gcode}_tmp.gcode"
+  mv "$OUTPUT" "$TMP_OUTPUT"
+  
+  echo "Collegamento tracciati con connect_paths.py..."
+  python3 "$DIR/connect_paths.py" "$TMP_OUTPUT" "$OUTPUT"
+  
+  # Rimuovi il file temporaneo
+  rm "$TMP_OUTPUT"
+  
+  echo "OK: creato \"$OUTPUT\" con tracciati collegati (penup=$PENUP pendown=$PENDOWN speed=$SPEED size=${WIDTH}x${HEIGHT}mm)"
+else
+  echo "OK: creato \"$OUTPUT\" (penup=$PENUP pendown=$PENDOWN speed=$SPEED size=${WIDTH}x${HEIGHT}mm)"
+fi

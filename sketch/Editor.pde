@@ -28,6 +28,7 @@ class Editor {
 		   roughLinesControl,
 		   drawUnderLineControl,
 		   exportGrupedControl,
+		   connectPathsControl,
 		   useFillsControl;
 
 	Textarea commandsInfo;
@@ -307,6 +308,18 @@ class Editor {
 			.setPaddingX(10)
 			;
 
+		connectPathsControl = cp5.addToggle("Connect Paths (G-code)")
+			.setPosition(250,475)
+			.setSize(20,20)
+			.setValue(connectPaths)
+			;
+		
+		connectPathsControl
+			.getCaptionLabel()
+			.align(ControlP5.RIGHT_OUTSIDE, ControlP5.CENTER)
+			.setPaddingX(10)
+			;
+
 		showCommandsControl = cp5.addToggle("Show Commands")
 			.setPosition(250,500)
 			.setSize(20,20)
@@ -378,6 +391,7 @@ class Editor {
 		speedControl.setValue(TOOL_SPEED_MM_PER_MIN);
 		toolDownControl.setValue(TOOL_DOWN_MM);
 		exportGrupedControl.setValue(exportGrouped);
+		connectPathsControl.setValue(connectPaths);
 		
 		if(showCommandsControl.getState()) {
 			commandsInfo.show();
@@ -411,6 +425,7 @@ class Editor {
 		useFills = useFillsControl.getState();
 		drawUnderLine = drawUnderLineControl.getState();
 		exportGrouped = exportGrupedControl.getState();
+		connectPaths = connectPathsControl.getState();
 		controlsVisible = false;
 		cp5.hide();
 		commandsInfo.hide(); 
@@ -489,6 +504,7 @@ class Editor {
 			useFills = useFillsControl.getState();
 			drawUnderLine = drawUnderLineControl.getState();
 			exportGrouped = exportGrupedControl.getState();
+			connectPaths = connectPathsControl.getState();
 			
 			if(showCommandsControl.getState()) {
 				commandsInfo.show();

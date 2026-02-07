@@ -111,6 +111,7 @@ class ImageSaver {
 		obj.setInt("maxLength", maxLength);
 		obj.setJSONArray("graphics", graphicsArray);
 		obj.setBoolean("randomizeEnds", randomizeEnds);
+		obj.setBoolean("connectPaths", connectPaths);
 		saveJSONObject(obj, "output/" + filename + ".json");
 		// saveJSONArray(layersArray, "output/" + filename + ".json");
 		println("done.");

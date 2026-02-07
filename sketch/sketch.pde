@@ -93,6 +93,7 @@ boolean useRoughLines = false;
 boolean useFills = true;
 boolean drawUnderLine = false;
 boolean exportGrouped = false;
+boolean connectPaths = false;
 
 int minLength = 200;
 int maxLength = 1000;
@@ -374,7 +375,8 @@ Process runSvgToGcodeProcess(String svgPath) {
 		str(TOOL_SPEED_MM_PER_MIN),
 		str(PRINT_W_MM),
 		str(PRINT_H_MM),
-		str(MARGIN_MM)
+		str(MARGIN_MM),
+		connectPaths ? "true" : "false"
 	};
 	
 	println("Executing conversion: " + join(cmd, " "));

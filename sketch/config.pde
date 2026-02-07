@@ -94,6 +94,9 @@ void parseConfigObject(JSONObject obj) {
 	if(!obj.isNull("exportGrouped")){
 		exportGrouped = obj.getBoolean("exportGrouped");
 	}
+	if(!obj.isNull("connectPaths")){
+		connectPaths = obj.getBoolean("connectPaths");
+	}
 	if(!obj.isNull("graphics")){
 		JSONArray gfx = obj.getJSONArray("graphics");
 		graphicSets = new GraphicSet[gfx.size()];
