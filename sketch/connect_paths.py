@@ -367,10 +367,21 @@ def generate_gcode(header: List[str], paths: List[GCodePath],
         else:
             # Path dello stesso gruppo: connessione continua con G1 (senza alzare la penna)
             lines.append(f"; Connessione continua dal path precedente")
-            lines.append(f"G1 X{first_point.x:.3f} Y{first_point.y:.3f}")
+            # Collega al secondo punto del path successivo (se esiste) saltando il primo
+            if len(path.points) > 1:
+                second_point = path.points[1]
+                lines.append(f"G1 X{second_point.x:.3f} Y{second_point.y:.3f} ; Connessione al secondo punto")
+                start_idx = 2  # Inizia dal terzo punto
+            else:
+                lines.append(f"G1 X{first_point.x:.3f} Y{first_point.y:.3f}")
+                start_idx = 1  # Path troppo corto, usa comportamento normale
         
-        # Disegna tutti i punti del path
-        for j, point in enumerate(path.points):
+        # Disegna tutti i punti del path (partendo da start_idx se definito)
+        if i == 0 or path.new_group:
+            start_idx = 0  # Per i nuovi gruppi disegna tutti i punti
+        
+        for j in range(start_idx, len(path.points)):
+            point = path.points[j]
             lines.append(f"G1 X{point.x:.3f} Y{point.y:.3f}")
     
     # Penna alzata solo alla fine di tutti i path

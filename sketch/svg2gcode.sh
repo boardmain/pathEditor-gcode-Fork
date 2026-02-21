@@ -57,18 +57,18 @@ layer_start = "; --- Layer {layer_index1:d} ---\\n"
 segment_first = """G0 Z{vp_penup} ;
 G0 X{x:.3f} Y{y:.3f} ; Initial position
 G0 Z{vp_pendown} ;
+G4 S10 ; PAUSA 10 Secondi
 F{vp_speed:d} ; Linear speed
 """
-
+  
 segment = """G1 X{x:.3f} Y{y:.3f}\\n"""
 
 line_end = """G0 Z{vp_penup} ; pen up\\n\\n"""
 
 document_end = """G0 Z{vp_penup} ;
-G00 X0 Y0;
 """
 EOF
-
+# G00 X0 Y0; questo era dopo il document_end, 
 vpype -c "$TMP_CFG" \
   read "$INPUT" \
   linemerge --tolerance 0.1mm \
